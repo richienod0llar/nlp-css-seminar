@@ -1,0 +1,15 @@
+# HuggingFace / LLM stack
+# IMPORTANT: install PyTorch first via scripts/install_pytorch.sh (cu126 for LRZ).
+# Then: pip install -r requirements-llm.txt
+transformers>=4.41.0
+datasets>=2.20.0
+accelerate>=0.30.0
+huggingface_hub>=0.23.0
+tokenizers>=0.19.0
+scipy
+numpy
+pandas
+tqdm
+tensorboard
+python-dotenv
+vllm
