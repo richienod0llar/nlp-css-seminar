@@ -1,5 +1,10 @@
 """Load Qwen3.5-9B from shared storage and run one short prompt."""
 
+import os
+
+# Avoid cuDNN SDPA init issues on some LRZ GPU stacks (see CUDNN_STATUS_NOT_INITIALIZED).
+os.environ.setdefault("TORCH_CUDNN_SDPA_ENABLED", "0")
+
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import torch
 
@@ -17,6 +22,7 @@ model = AutoModelForCausalLM.from_pretrained(
     device_map="auto",
     torch_dtype=torch.bfloat16,
     trust_remote_code=True,
+    attn_implementation="eager",  # safer than default SDPA on LRZ H100 stack
 )
 
 inputs = tokenizer(PROMPT, return_tensors="pt").to(model.device)

@@ -1,0 +1,2 @@
+# Runtime artifacts (vLLM startup logs, eval reports, etc.)
+logs/
