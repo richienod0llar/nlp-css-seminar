@@ -1,0 +1,204 @@
+# Notation key
+notation:
+  x:"grammatical subject (respondent or topic)"
+  g:"government (subject)"
+  o:"anyone / general subject"
+  r:"respondent him/herself"
+  I:"link verb (is/was/are)"
+  P:"predicator(general)"
+  C:"causal relationship (subject causes object)"
+  D:"Deed / action"
+  E:"Expectation"
+  F:"feeling"
+  FD:"future deed"
+  "H(+I)":"has to / should + infinitive"
+  HR:"Has the right to"
+  J:"judgement"
+  PR:"preference"
+  S:"similarity or difference"
+  e:"evaluative adjective"
+  i:"importance adjective"
+  f:"feeling noun/adjective"
+  c:"cognitive judgement"
+  ca:"causal marker"
+  s:"similarity marker"
+  pr:"preference marker"
+  ri:"rights marker"
+  d:"demographic descriptor"
+  sc:"scale/classifier"
+  ti:"time expression"
+  pl:"place expression"
+  qu:"quantity expression"
+  pro:"procedure expression"
+  y:"object / second entity"
+  "y":(changed/affected entity)
+  z:"comparison referent"
+
+structures:
+  1:"xIsc - subject + link verb + scale/classifier (e.g. "someone is bad")"
+  2:"xPy - subject + predicator + object (e.g. "New laws have changed the position of women")"
+  3:"xP - subject + predicator, no object (e.g. "Position of President has changed")"
+
+Concepts:
+  # --Subjective variables--
+  Evaluation:
+    type:subjective
+    structures:
+      1:"xIe"
+      2:null
+      3:null
+
+  Importance:
+    type:subjective
+    structures:
+      1:"xIi"
+      2:null
+      3:null
+
+  Values:
+    type:subjective
+    structures:
+      1:"vIi"
+      2:null
+      3:null
+
+  Feelings:
+    type:subjective
+    structures:
+      1:"xIf"
+      2:"xFy or xPf"
+      3:null
+
+  Cognitive judgement:
+    type:subjective
+    structures:
+      1:"xIc"
+      2:null
+      3:null
+
+  Causal relationship:
+    type:subjective
+    structures:
+      1:"xIca"
+      2:"xCy"
+      3:null
+
+  Similarity relationship:
+    type:subjective
+    structures:
+      1:"xIs"
+      2:"xSy"
+      3:null
+
+  Preference:
+    type:subjective
+    structures:
+      1:"xIpr"
+      2:"xPRy (z)"
+      3:null
+
+  Norms:
+    type:subjective
+    structures:
+      1:null
+      2:"o(H+I)y"
+      3:"o(H+I)"
+
+  Policies:
+    type:subjective
+    structures:
+      1:null
+      2:"g(H+I)y"
+      3:"g(H+I)"
+
+  Rights:
+    type:subjective
+    structures:
+      1:"xIri"
+      2:"xHRy"
+      3:null
+
+  Action tendencies:
+    type:subjective
+    structures:
+      1:null
+      2:"rFDy"
+      3:null
+
+  Expectations of future events:
+    type:subjective
+    structures:
+      1:null
+      2:"xFDy"
+      3:"xFD"
+
+  Evaluative belief:
+    type:subjective
+    structures:
+      1:null
+      2:"xPy or xPy_e"
+      3:"xP_e"
+
+  # --Objective variables--
+  Behaviour:
+    type:objective
+    structures:
+      1:null
+      2:"rDy"
+      3:"rD"
+
+  Events:
+    type:objective
+    structures:
+      1:null
+      2:"xDy"
+      3:"xD"
+
+  Demographics:
+    type:objective
+    structures:
+      1:"xId"
+      2:null
+      3:null
+
+  Knowledge:
+    type:objective
+    structures:
+      1:"xIsc"
+      2:"xPy"
+      3:"xP"
+
+  Time:
+    type:objective
+    structures:
+      1:null
+      2:null
+      3:"xDti"
+
+  Place:
+    type:objective
+    structures:
+      1:null
+      2:null
+      3:"xDpI"
+
+  Quantities:
+    type:objective
+    structures:
+      1:null
+      2:"xDqu"
+      3:null
+
+  Procedures:
+    type:objective
+    structures:
+      1:null
+      2:null
+      3:"xDpI, pro"
+
+question_formats:
+  -"Direct interrogative (with WH word)"
+  -"Direct interrogative (without WH word)"
+  -"Direct imperative"
+  -"Indirect interrogative"
+  -"Indirect imperative"
