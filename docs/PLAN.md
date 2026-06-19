@@ -16,34 +16,34 @@ todos:
     status: completed
   - id: scaffold
     content: "Finish project scaffold: config.yaml, src/sig/ package layout, data/gold_set.xlsx (move from repo-root data.xlsx). Partially done — env files, outputs/.gitignore, scripts/ exist."
-    status: pending
+    status: completed
   - id: concepts-ref
     content: "Encode the annotation guide into data/concepts.yaml: 22 basic concepts (subjective/objective), the 3 structures, per-concept structure codes, and notation key."
-    status: pending
+    status: completed
   - id: gold-loader
     content: Implement schema.py + gold-set loader for data.xlsx and a normalize.py for concept-name and structure-code matching (handles spelling/notation differences).
-    status: pending
+    status: completed
   - id: llm-client
     content: "Implement llm_client.py: OpenAI-compatible client to vLLM with JSON-structured output and retry handling."
-    status: pending
+    status: completed
   - id: prompts
     content: Write assertion_developer.md and question_developer.md system prompts from the guide rules, including the 3 worked reference rows as few-shot examples.
-    status: pending
+    status: completed
   - id: agents-pipeline
     content: Implement AssertionDeveloper, QuestionDeveloper agents and pipeline.py (single indicator -> assertion -> question).
-    status: pending
+    status: completed
   - id: vllm-script
     content: "scripts/start_vllm.sh done (interactive). Still need scripts/run_evaluation.sh sbatch wrapper for batch eval."
     status: pending
   - id: metrics
     content: "Implement objective metrics: concept exact-match + confusion matrix, structure match, and 4-way question-format classification."
-    status: pending
+    status: completed
   - id: judge
     content: Implement LLM-as-judge for concept-assertion and assertion-question alignment (1-5), model configurable.
     status: pending
   - id: eval-runner
     content: "Implement run_eval.py + CLIs: run both agents over the gold set (isolated mode), score, and write a summary + per-row report to outputs/."
-    status: pending
+    status: in_progress
   - id: smoke-test-transformers
     content: "Add scripts/smoke_test_transformers.py: tutorial-style HF load of Qwen3.5-9B from shared path; run on GPU node before vLLM."
     status: completed
@@ -55,6 +55,32 @@ todos:
     status: pending
 isProject: false
 ---
+
+## Progress Update (2026-06-19)
+
+Completed locally:
+
+- Created Phase 1 project scaffold
+- Added concept.yaml reference file from protocol framework
+- Implemented normalize.py utilities
+- Implemented data loader
+- Implemented LLM client
+- Implemented MockLLMClient for local development
+- Dynamically incorporated concept.yaml file into the prompts, ensuring LLM always has the latest rules without manual prompt editing. 
+- Implemented AssertionDeveloper agent
+- Implemented QuestionDeveloper agent
+- Implemented SurveyPipeline
+- Implemented initial eveluation metrics
+- Implemented local evaluation runner
+- Successfully executed end-to-end pipeline using mock responses.
+
+Next steps:
+
+- Connect pipeline to LRZ-hosted vLLM endpoint
+- Run evaluation on full gold set using Qwen3.5-9B (Replace "mock: true" with "mock: false" in config.yaml)
+- Implement LLM-as-judge allignment metrics
+- Generate evaluation reports and error analysis
+
 
 # Survey Item Generator: Prompting Baseline + Evaluation
 

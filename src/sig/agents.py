@@ -2,12 +2,18 @@ from pathlib import Path
 from typing import Dict, Any
 from src.sig.schema import AssertionResult, QuestionResult
 from src.sig.llm_client import get_client
+from src.sig.prompts.prompt_loader import load_prompt
+
 
 class BaseAgent:
     def __init__(self, config: Dict[str, Any], prompt_path: str):
         self.config = config
         self.client = get_client(config, mock=config["llm"].get("mock", False))
-        self.system_prompt = Path(prompt_path).read_text(encoding="utf-8")
+        # Inject concepts.yaml into the prompt at runtime
+        self.system_prompt = load_prompt(
+            template_path=Path(prompt_path),
+            yaml_path=config["data"]["concepts"]
+            )
 
 class Assertion_Developer(BaseAgent):
     def run(self, input_indicator: str) -> AssertionResult:

@@ -1,6 +1,7 @@
 import yaml
 from src.sig.loader import DataManager
 from src.sig.llm_client import get_client
+from src.sig.prompts.prompt_loader import load_prompt
 
 # Initialize the manager
 manager = DataManager(excel_path='data/gold_set.xlsx', yaml_path='data/concepts.yaml')
@@ -24,3 +25,10 @@ response = client.chat_completion(
     user_prompt="Input indicator: Overall satisfaction with product"
 )
 print(response)
+
+prompt = load_prompt(
+    template_path="src/sig/prompts/assertion_developer.md",
+    yaml_path="data/concepts.yaml"
+)
+
+print(prompt[:2000]) # Print first 2000 chars to verify injection'
