@@ -4,6 +4,8 @@ llm:
   api_key:"EMPTY"
   max_tokens:1024
   temperature:0.0
+  mock: true # <-- Set this to false when on LRZ
+
 
 judge:
   model:"/dss/dssmcmlfs01/pn25ju/pn25ju-dss-0000/models/Qwen3.5-9B"
