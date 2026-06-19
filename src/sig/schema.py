@@ -21,7 +21,7 @@ class ConceptRule:
     allowed_structures: Dict[int, Optional[str]]
 
 @dataclass
-class AsertionResult:
+class AssertionResult:
     predicted_concept: str
     predicted_structure_code: str
     predicted_assertion: str
