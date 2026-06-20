@@ -4,8 +4,8 @@ llm:
   api_key: "EMPTY"
   max_tokens: 1024
   temperature: 0.0
-  mock: true # <-- Set this to false when on LRZ
-
+  enable_thinking: false  # required for Qwen3.5 JSON output with guided_json
+  mock: false
 
 judge:
   model: "/dss/dssmcmlfs01/pn25ju/pn25ju-dss-0000/models/Qwen3.5-9B"
@@ -16,3 +16,7 @@ data:
 
 output:
   dir: "outputs/"
+
+eval:
+  max_rows: 5  # null = all 115 rows; set e.g. 5 for a quick test
+  output_dir: "outputs/"
