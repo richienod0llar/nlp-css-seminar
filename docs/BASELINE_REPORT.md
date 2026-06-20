@@ -6,24 +6,24 @@
 **Gold set:** 115 rows (`data/gold_set.xlsx`)  
 **Config:** `mock: false`, `enable_thinking: false`, `temperature: 0.0`, `max_tokens: 1024`
 
-## Summary
+Two full eval runs are documented below: an **initial zero-shot baseline** and a **prompt-tuning rerun** after spelling normalization, concept constraints, and targeted assertion prompt updates.
 
-First end-to-end **zero-shot prompting baseline** for Caro's two-agent survey item pipeline, evaluated in **isolated mode** (assertion from gold indicator; question from gold assertion).
+## Results at a glance
 
-| Metric | Result |
-|--------|--------|
-| Rows evaluated | 115 |
-| Concept accuracy | **57.4%** (66/115) |
-| Structure accuracy | **51.3%** (59/115) |
-| Concept + structure both correct | **42.6%** (49/115) |
-| Question non-empty | **99.1%** (114/115) |
-| Question exact match | **20.0%** (23/115) |
+| Metric | Run 1 — Initial baseline | Run 2 — Prompt tuning | Delta |
+|--------|--------------------------|----------------------|-------|
+| Concept accuracy | 57.4% (66/115) | **69.6%** (80/115) | **+12.2 pp** |
+| Structure accuracy | 51.3% (59/115) | **55.7%** (64/115) | **+4.3 pp** |
+| Both correct | 42.6% (49/115) | **53.0%** (61/115) | **+10.4 pp** |
+| Question non-empty | 99.1% (114/115) | 99.1% (114/115) | 0 |
+| Question exact match | 20.0% (23/115) | 20.0% (23/115) | 0 |
 
-**Artifacts (local run):**
+| Run | Timestamp | Artifacts |
+|-----|-----------|-----------|
+| 1 — Initial baseline | `20260620_185119` | `docs/baseline/eval_report_vllm_20260620_185119.csv`, `docs/baseline/eval_summary_vllm_20260620_185119.json` |
+| 2 — Prompt tuning (**current best**) | `20260620_194152` | `docs/baseline/eval_report_vllm_20260620_194152.csv`, `docs/baseline/eval_summary_vllm_20260620_194152.json` |
 
-- Per-row report: `outputs/eval_report_vllm_20260620_185119.csv`
-- Summary JSON: `outputs/eval_summary_vllm_20260620_185119.json`
-- Committed snapshot: `docs/baseline/eval_summary_vllm_20260620_185119.json`, `docs/baseline/eval_report_vllm_20260620_185119.csv`
+Runtime copies also written to `outputs/` on each run.
 
 ## Evaluation protocol
 
@@ -32,51 +32,33 @@ Each gold row is scored in two independent stages (not chained):
 1. **Assertion Developer** — input: `input_indicator` → predicted `basic_concept`, `semantic_structure`, `assertion`
 2. **Question Developer** — input: gold `assertion` → predicted `question`, `answer_options`, `question_format`
 
-Metrics are **exact match** after normalization (`src/sig/normalize.py`): lowercase, whitespace stripped; structure codes extracted via regex (e.g. `xIe`, `xPRy`).
+Metrics are **exact match** after normalization (`src/sig/normalize.py`): lowercase, whitespace stripped; US/UK spelling unified (`Behavior`/`Behaviour`, `judgment`/`judgement`); structure codes extracted via regex (e.g. `xIe`, `xPRy`).
 
 Question exact match compares normalized predicted vs gold question strings. It does **not** measure semantic similarity (LLM-as-judge not yet implemented).
 
-## Key findings
+---
 
-### Pipeline stability
+## Run 1 — Initial baseline (20260620_185119)
 
-After disabling Qwen3.5 thinking mode (`enable_thinking: false`, `/no_think`, `chat_template_kwargs`), JSON parsing is reliable:
+First end-to-end **zero-shot prompting baseline** with thinking mode disabled.
 
-- **0/115** rows with empty assertion fields
-- **1/115** question-stage JSON parse failure (row 114: malformed `answer_options` string)
+### Headline
 
-Earlier 5-row smoke runs without thinking disabled produced frequent "Thinking Process:" prose instead of JSON.
+| Metric | Result |
+|--------|--------|
+| Concept accuracy | 57.4% |
+| Structure accuracy | 51.3% |
+| Both correct | 42.6% |
+| Question non-empty | 99.1% |
+| Question exact match | 20.0% |
 
-### Assertion stage (~50% accuracy)
+### Key findings
 
-The model often produces plausible assertions but mislabels the **taxonomy** (concept + structure code). Common error patterns:
+**Pipeline stability:** JSON parsing reliable after `enable_thinking: false`. 0/115 empty assertion fields; 1/115 question-stage JSON failure (row 114).
 
-**Spelling variants (counted as wrong, fixable in normalization):**
+**Assertion stage (~50%):** Plausible assertions but frequent taxonomy errors. Nine rows failed concept match due to US/UK spelling alone (`Behavior`/`Behaviour`, `Cognitive judgment`/`Cognitive judgement`); re-scoring with spelling normalization would raise concept accuracy to ~65% without re-running.
 
-- `Behavior` → `Behaviour` (5 rows)
-- `Cognitive judgment` → `Cognitive judgement` (4 rows)
-
-Adjusting for these 9 rows would raise concept accuracy to **~65%** without re-running the model.
-
-**Concept confusions (semantic):**
-
-| Gold concept | Often predicted as |
-|--------------|-------------------|
-| Preference | Expectations of future events |
-| Action tendencies | Preference |
-| Values | Importance |
-| Events | Feelings |
-
-**Structure confusions:**
-
-| Gold structure | Often predicted as |
-|----------------|-------------------|
-| `xPRy` (preference) | `xFD`, `xIpr` |
-| `xFD` (future deed) | `xFDy`, `xIpr` |
-| `vIi` (value/importance) | `xIi` (information) |
-| `rDy` (deed frequency) | `rDqu` |
-
-**Hardest concepts** (by concept accuracy on gold labels):
+**Hardest concepts (Run 1):**
 
 | Concept | n | Concept acc | Structure acc |
 |---------|---|-------------|---------------|
@@ -85,40 +67,89 @@ Adjusting for these 9 rows would raise concept accuracy to **~65%** without re-r
 | Policies | 3 | 0% | 67% |
 | Action tendencies | 5 | 20% | 20% |
 
-**Easiest concepts:**
+**Common confusions:** Preference ↔ Expectations of future events; `xPRy` ↔ `xFD`/`xIpr`; Values (`vIi`) ↔ Importance (`xIi`).
+
+---
+
+## Run 2 — Prompt tuning (20260620_194152)
+
+Changes applied before this run:
+
+1. **Spelling normalization** in `normalize.py` (`Behavior`/`Behaviour`, `judgment`/`judgement`)
+2. **Concept constraint** — `guided_json` enum over 22 YAML concept names + post-processing via `match_concept()`
+3. **Assertion prompt** — disambiguation table for commonly confused concepts; three new worked examples (Expectations met, Desired improvement, Frequency of physical exercise)
+
+### Headline
+
+| Metric | Result |
+|--------|--------|
+| Concept accuracy | **69.6%** |
+| Structure accuracy | **55.7%** |
+| Both correct | **53.0%** |
+| Question non-empty | 99.1% |
+| Question exact match | 20.0% |
+
+### What improved
+
+**Net concept changes:** 21 rows improved, 7 regressed (28 flips). Structure: 12 improved, 7 worsened.
+
+**Targeted disambiguation wins:**
+
+| Row | Indicator | Run 1 → Run 2 |
+|-----|-----------|---------------|
+| 3 | Expectations met | Expectations of future events → **Evaluative belief** ✓ |
+| 5, 33, 71 | Desired improvement | Expectations of future events → **Preference** ✓ |
+| 20 | Frequency of shoe purchases | Quantities → **Behaviour** ✓ |
+
+**Per-concept gains (selected):**
+
+| Concept | Run 1 concept acc | Run 2 concept acc |
+|---------|-------------------|---------------------|
+| Behavior | 0% | **86%** |
+| Preference | 40% | **80%** |
+| Hard-pair group* | 32% | **79%** |
+
+\*Preference, Expectations of future events, Evaluative belief, Action tendencies, Behavior.
+
+**Structure on hard-pair group:** 11% → 36% (still the main remaining gap).
+
+### Remaining weaknesses
+
+- **Structure accuracy** only +4.3 pp; Preference structure still 40% (`xPRy` vs `xIpr`)
+- **Events, Place, Policies** still 0% concept accuracy
+- **Feelings** at 25% (new regressions, e.g. stress → Evaluation)
+- **7 concept regressions**, e.g. row 108: Evaluative belief → Cognitive judgement
+- **Question stage unchanged**; row 114 still fails JSON parse (malformed `answer_options`)
+- **Question exact match** flat at 20%; needs LLM-as-judge for meaningful measurement
+
+**Hardest concepts (Run 2):**
 
 | Concept | n | Concept acc | Structure acc |
 |---------|---|-------------|---------------|
-| Similarity relationship | 3 | 100% | 100% |
-| Importance, Knowledge, Norms | 3 each | 100% | 100% |
-| Demographics | 15 | 87% | 87% |
-| Evaluation | 20 | 85% | 85% |
+| Events | 5 | 0% | — |
+| Policies | 3 | 0% | — |
+| Place | 3 | 0% | — |
+| Feelings | 4 | 25% | — |
+| Cognitive judgment | 7 | 43% | — |
 
-Demographics and Evaluation dominate the gold set and are learned reasonably well. Rare or confusable categories (Behavior, Cognitive judgment, Preference vs Expectation) drive most errors.
-
-### Question stage (~99% coverage)
-
-The question developer reliably turns gold assertions into survey items. Exact-match score (20%) understates quality: gold allows many valid paraphrases and response formats (rating scale vs open-ended).
-
-Exact matches (23 rows) skew toward straightforward demographic and frequency items, e.g. employment status, income source, "how often do you buy shoes."
-
-**Single failure (row 114):** model returned nearly-valid JSON but embedded answer options inside the string value, breaking the parser.
+---
 
 ## Interpretation
 
-This baseline establishes a **pre-fine-tuning reference point** for the prompt-driven pipeline:
+**Run 1** establishes the pre-tuning reference point. **Run 2** shows that prompt engineering and normalization yield **+12 pp concept accuracy** without fine-tuning, with the largest gains on Behavior, Preference, and Expectation/Evaluative-belief disambiguation.
 
-- **Question generation** is largely solved at the coverage level; improvement needs semantic scoring (LLM-as-judge), not just exact string match.
-- **Assertion taxonomy** is the main bottleneck; errors are concentrated in adjacent concept/structure pairs rather than total incoherence.
-- **115 examples** is enough for evaluation but small for supervised fine-tuning; LoRA on the assertion stage is the most promising next training step.
+- **Question generation** is stable at ~99% coverage; exact string match (20%) understates quality.
+- **Assertion taxonomy** remains the bottleneck; structure codes lag concept labels.
+- **115 examples** is enough for evaluation but small for full fine-tuning; LoRA on the assertion stage is the next training option if structure accuracy plateaus.
 
 ## Recommended next steps
 
-1. **Quick wins (no training):** spelling normalization, few-shot exemplars, constrain concept output to valid YAML list
+1. **Structure-focused prompt pass:** more examples for `xPRy` / `xIpr` / `xFD` / `rFDy`
 2. **LLM-as-judge:** implement `judge.py` for concept-assertion and assertion-question alignment (1–5)
 3. **Richer metrics:** per-concept confusion matrix, question-format classification
-4. **LoRA SFT:** assertion developer only, train/val split (~90/25), re-run same eval protocol
-5. **Batch eval:** `scripts/run_evaluation.sh` sbatch wrapper for unattended runs
+4. **JSON robustness:** retry/repair for row 114-style malformed `answer_options`
+5. **LoRA SFT:** assertion developer only if prompt tuning plateaus (~70% concept / ~56% structure)
+6. **Batch eval:** `scripts/run_evaluation.sh` sbatch wrapper
 
 ## How to reproduce
 

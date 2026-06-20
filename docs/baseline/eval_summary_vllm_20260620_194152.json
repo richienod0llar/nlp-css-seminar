@@ -1,0 +1,9 @@
+{
+  "total_rows": 115,
+  "concept_accuracy_pct": 69.57,
+  "structure_accuracy_pct": 55.65,
+  "question_non_empty_pct": 99.13,
+  "question_exact_match_pct": 20.0,
+  "run_label": "prompt_tuning",
+  "notes": "After spelling normalization, concept enum constraint, assertion prompt disambiguation. Compare to eval_summary_vllm_20260620_185119.json (initial baseline)."
+}
