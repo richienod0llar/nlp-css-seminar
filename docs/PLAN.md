@@ -1,6 +1,6 @@
 ---
 name: Survey Item Generator
-overview: "Phase 0 complete (2026-06-16): GitHub, conda sig-llm, GPU, vLLM serving Qwen3.5-9B on LRZ H100. Phase 1: build survey-item generator + eval harness in ~/nlp-css-seminar/."
+overview: "Phase 0 complete (2026-06-16). Phase 1 mostly scaffolded (2026-06-19): agents, prompts, mock eval work; real vLLM eval + judge + sbatch still pending."
 todos:
   - id: github-auth-clone
     content: "Set up GitHub SSH key on LRZ, add to GitHub account, clone git@github.com:richienod0llar/nlp-css-seminar.git into ~/nlp-css-seminar/, verify remote and branch."
@@ -36,8 +36,8 @@ todos:
     content: "scripts/start_vllm.sh done (interactive). Still need scripts/run_evaluation.sh sbatch wrapper for batch eval."
     status: pending
   - id: metrics
-    content: "Implement objective metrics: concept exact-match + confusion matrix, structure match, and 4-way question-format classification."
-    status: completed
+    content: "Basic concept + structure exact-match in metrics.py. Still need confusion matrix, question-format classification, normalization wired in."
+    status: in_progress
   - id: judge
     content: Implement LLM-as-judge for concept-assertion and assertion-question alignment (1-5), model configurable.
     status: pending
@@ -74,12 +74,17 @@ Completed locally:
 - Implemented local evaluation runner
 - Successfully executed end-to-end pipeline using mock responses.
 
-Next steps:
+Next steps (2026-06-20):
 
-- Connect pipeline to LRZ-hosted vLLM endpoint
-- Run evaluation on full gold set using Qwen3.5-9B (Replace "mock: true" with "mock: false" in config.yaml)
-- Implement LLM-as-judge allignment metrics
-- Generate evaluation reports and error analysis
+- Request new GPU job on LRZ (`salloc` / `srun`)
+- Start vLLM with `bash scripts/start_vllm.sh`
+- Set `mock: false` in `config.yaml` and run `run_test_pipeline.py` on one gold row
+- Fix vLLM JSON schema for question stage; handle Qwen3.5 thinking output if needed
+- Wire `normalize.py` into metrics; add question-format + confusion matrix
+- Implement `judge.py` (LLM-as-judge alignment scores)
+- Isolated eval mode (question dev on gold assertions)
+- Full 115-row run + reports to `outputs/`
+- Add `scripts/run_evaluation.sh` sbatch wrapper
 
 
 # Survey Item Generator: Prompting Baseline + Evaluation
@@ -194,7 +199,7 @@ Keep protocol docs in home or add to repo as needed:
 
 | File | Location in repo (current) |
 |------|----------------------------|
-| Gold set (`data.xlsx`) | `data.xlsx` at repo root today; move to `data/gold_set.xlsx` in Phase 1 scaffold |
+| Gold set | `data/gold_set.xlsx` |
 | Protocol / LRZ docs | Repo root + `docs/PLAN.md` |
 | Implementation plan | `docs/PLAN.md` |
 
@@ -440,43 +445,36 @@ vLLM works on LRZ with the workarounds above. Keep `smoke_test_transformers.py` 
 
 ## Key resources to leverage
 
-- Gold set: `data.xlsx` in repo root today (115 rows, all 22 basic concepts). Phase 1 will move to `data/gold_set.xlsx`. Columns: `example_id, input_indicator, basic_concept, semantic_structure, assertion, question, answer_options, domain, source_type, confusable_with`.
+- Gold set: `data/gold_set.xlsx` (115 rows, all 22 basic concepts). Columns: `example_id, input_indicator, basic_concept, semantic_structure, assertion, question, answer_options, domain, source_type, confusable_with`.
 - Annotation Guide in the protocol doc is the first draft of the Assertion Developer prompt: the 22 basic concepts (14 subjective + 8 objective), the 3 semantic structures, the per-concept structure-code table, the notation key, the 4 question formats, the 3 worked reference rows, and the confusable-concept heuristics. These get encoded directly into prompts and a `concepts` reference module.
 
 ## Project layout (`~/nlp-css-seminar/`)
 
-### Exists today (Phase 0)
+### Exists today
 
 | Path | Status |
 |------|--------|
-| `docs/PLAN.md` | This plan |
-| `environment.yml`, `requirements.txt`, `requirements-llm.txt` | Done |
-| `data.xlsx` | Gold set at repo root (relocate in scaffold) |
+| `config.yaml` | LLM + data paths; `mock: true` by default |
+| `data/gold_set.xlsx` | Gold set (115 rows) |
+| `data/concepts.yaml` | 22 concepts, structures, notation |
+| `src/sig/` | Agents, pipeline, LLM client, loader, prompts, eval |
+| `run_test_pipeline.py`, `test_load.py` | Local test scripts |
+| `docs/PLAN.md`, `README.md` | Documentation |
+| `environment.yml`, `requirements*.txt` | Dependencies |
 | `outputs/.gitignore` | Ignores `logs/` |
-| `scripts/activate_env.sh` | conda + CUDA libs |
-| `scripts/setup_cuda_libs.sh` | LRZ CUDA 12.2 / vLLM cu13 workaround |
-| `scripts/install_pytorch.sh` | Pinned cu126 PyTorch |
-| `scripts/request_gpu.sh` | Example `salloc` |
-| `scripts/start_vllm.sh` | Interactive vLLM server |
-| `scripts/start_vllm_debug.sh` | Verbose logging wrapper |
-| `scripts/smoke_test_transformers.py` | HF smoke test |
-| `scripts/smoke_test_llm.py` | vLLM API smoke test |
+| `scripts/activate_env.sh`, `setup_cuda_libs.sh` | Conda + LRZ CUDA workaround |
+| `scripts/start_vllm.sh` | Interactive vLLM (working on H100) |
+| `scripts/smoke_test_*.py` | Phase 0 smoke tests |
 | Protocol doc, LRZ tutorial PDF | Repo root |
 
-### Phase 1 (to build)
+### Still to build
 
-- `config.yaml`: model path, vLLM base_url, generation params, judge model
-- `data/gold_set.xlsx`: canonical gold-set path (move from `data.xlsx`)
-- `data/concepts.yaml`: 22 concepts, structure codes, notation key
-- `src/sig/schema.py`: typed records (`GoldRow`, `AssertionResult`, `QuestionResult`)
-- `src/sig/llm_client.py`: OpenAI-compatible wrapper to vLLM, JSON-mode output
-- `src/sig/prompts/assertion_developer.md`, `question_developer.md`
-- `src/sig/agents.py`: `AssertionDeveloper`, `QuestionDeveloper`
-- `src/sig/pipeline.py`: indicator → question
-- `src/sig/normalize.py`: concept/structure normalization
-- `src/sig/evaluation/metrics.py`, `judge.py`, `run_eval.py`
-- `scripts/run_evaluation.sh`, `scripts/run_pipeline.py`, `scripts/run_evaluation.py`
-- `outputs/`: predictions + scored reports (logs already under `outputs/logs/`)
+- `src/sig/evaluation/judge.py` — LLM-as-judge (empty stub)
+- Isolated eval mode + full 115-row runner with CSV/JSON reports
+- Question-format metric, confusion matrix, normalized matching in metrics
+- Separate JSON schemas for assertion vs question in `llm_client.py`
+- `scripts/run_evaluation.sh` — sbatch wrapper for batch eval
+- Root `.gitignore` cleanup (done 2026-06-20)
 
 ## Evaluation design (from the protocol's criteria tables)
 
@@ -509,13 +507,13 @@ Report: overall accuracy, per-concept and per-structure breakdowns, mean judge s
 3. Transformers smoke test
 4. vLLM server + API smoke test (LRZ CUDA workarounds)
 
-**Phase 1 — Build pipeline (next)**
+**Phase 1 — Pipeline (in progress, 2026-06-19)**
 
-5. Finish scaffold (`config.yaml`, `src/sig/`, `data/gold_set.xlsx`)
-6. Concepts reference + gold loader + normalize
-7. Agents + prompts + LLM client
-8. Evaluation harness + sbatch scripts
-9. End-to-end smoke on a few gold rows, then full 115-row run
+5. ~~Scaffold, concepts, gold loader~~ done
+6. ~~Agents + prompts + mock pipeline~~ done
+7. Connect to real vLLM (`mock: false`) — **next**
+8. Finish eval harness (judge, metrics, isolated mode, reports)
+9. Full 115-row run via sbatch
 
 ## Open items to confirm with the team (not blockers)
 
