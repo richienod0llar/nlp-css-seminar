@@ -2,6 +2,8 @@ from pathlib import Path
 from typing import Any, Dict
 
 from src.sig.llm_client import get_client
+from src.sig.loader import load_concept_names
+from src.sig.normalize import match_concept
 from src.sig.prompts.prompt_loader import load_prompt
 from src.sig.schema import AssertionResult, QuestionResult
 
@@ -24,16 +26,23 @@ class BaseAgent:
 
 
 class Assertion_Developer(BaseAgent):
+    def __init__(self, config: Dict[str, Any]):
+        super().__init__(config, "src/sig/prompts/assertion_developer.md")
+        self.valid_concepts = load_concept_names(config["data"]["concepts"])
+
     def run(self, input_indicator: str) -> AssertionResult:
         user_prompt = f"Develop an assertion for this indicator: {input_indicator}"
         response = self.client.chat_completion(
             self.system_prompt,
             user_prompt,
             response_schema="assertion",
+            valid_concepts=self.valid_concepts,
             **self._llm_kwargs(),
         )
+        raw_concept = response.get("concept", "")
+        canonical_concept = match_concept(raw_concept, self.valid_concepts)
         return AssertionResult(
-            predicted_concept=response.get("concept", ""),
+            predicted_concept=canonical_concept or raw_concept,
             predicted_structure_code=response.get("structure_code", ""),
             predicted_assertion=response.get("assertion", ""),
             raw_response=str(response),

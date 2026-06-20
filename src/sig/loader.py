@@ -1,8 +1,17 @@
 import pandas as pd
 import yaml
 from pathlib import Path
-from typing import List, Dict, Optional
+from typing import Dict, List, Optional
+
 from src.sig.schema import GoldRow, ConceptRule
+
+
+def load_concept_names(yaml_path: str) -> List[str]:
+    """Return canonical basic concept names from concepts.yaml."""
+    with open(yaml_path, "r", encoding="utf-8") as f:
+        data = yaml.safe_load(f)
+    return list(data["Concepts"].keys())
+
 
 class DataManager:
     def __init__(self, excel_path: str, yaml_path: str):
