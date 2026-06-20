@@ -5,7 +5,7 @@ from typing import Any, Dict, Literal, List, Optional
 
 from openai import OpenAI
 
-ResponseSchema = Literal["assertion", "question"]
+ResponseSchema = Literal["assertion", "question", "judge"]
 
 ASSERTION_SCHEMA: Dict[str, Any] = {
     "type": "object",
@@ -36,8 +36,43 @@ QUESTION_SCHEMA: Dict[str, Any] = {
     "required": ["question", "answer_options", "question_format"],
 }
 
+JUDGE_SCHEMA: Dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "score": {"type": "integer", "minimum": 1, "maximum": 5},
+        "rationale": {"type": "string"},
+    },
+    "required": ["score"],
+}
 
-def parse_json_response(content: str) -> Dict[str, Any]:
+
+def _repair_broken_question_json(content: str) -> Dict[str, Any]:
+    """Extract question fields when answer_options breaks JSON quoting."""
+    result: Dict[str, Any] = {}
+    question_match = re.search(r'"question"\s*:\s*"((?:[^"\\]|\\.)*)"', content)
+    if question_match:
+        result["question"] = question_match.group(1)
+    format_match = re.search(r'"question_format"\s*:\s*"((?:[^"\\]|\\.)*)"', content)
+    if format_match:
+        result["question_format"] = format_match.group(1)
+    block_match = re.search(
+        r'"answer_options"\s*:\s*(.+?),\s*"question_format"',
+        content,
+        re.DOTALL,
+    )
+    if block_match:
+        block = block_match.group(1).strip()
+        single = re.match(r'^"((?:[^"\\]|\\.)*)"$', block)
+        if single:
+            result["answer_options"] = single.group(1)
+        else:
+            parts = re.findall(r'"((?:[^"\\]|\\.)*)"', block)
+            if parts:
+                result["answer_options"] = ", ".join(parts)
+    return result
+
+
+def parse_json_response(content: str, schema: Optional[ResponseSchema] = None) -> Dict[str, Any]:
     """Parse model output; tolerate thinking text before/after JSON."""
     if not content:
         return {}
@@ -63,6 +98,10 @@ def parse_json_response(content: str) -> Dict[str, Any]:
             return json.loads(content[start : end + 1])
         except json.JSONDecodeError:
             pass
+    if schema == "question":
+        repaired = _repair_broken_question_json(content)
+        if repaired.get("question"):
+            return repaired
     if content.lower().startswith("thinking process"):
         print("Error decoding JSON response: model returned thinking text only (no JSON).")
         return {}
@@ -103,6 +142,8 @@ class vLLMClient:
     ) -> Dict[str, Any]:
         if response_schema == "assertion":
             schema = build_assertion_schema(valid_concepts)
+        elif response_schema == "judge":
+            schema = JUDGE_SCHEMA
         else:
             schema = QUESTION_SCHEMA
         user_prompt = _build_user_prompt(user_prompt, self.enable_thinking)
@@ -126,7 +167,7 @@ class vLLMClient:
             reasoning = getattr(msg, "reasoning_content", None)
             if reasoning:
                 content = reasoning
-        return parse_json_response(content)
+        return parse_json_response(content, schema=response_schema)
 
 
 class MockLLMClient:
@@ -178,6 +219,8 @@ class MockLLMClient:
         valid_concepts: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         del system_prompt, user_prompt, temperature, max_tokens, valid_concepts
+        if response_schema == "judge":
+            return {"score": random.randint(3, 5), "rationale": "Mock judge score."}
         if response_schema == "assertion":
             return random.choice(self._ASSERTION_RESPONSES)
         return random.choice(self._QUESTION_RESPONSES)
@@ -192,4 +235,17 @@ def get_client(config: Dict[str, Any], mock: bool = False):
         model=llm["model"],
         api_key=llm.get("api_key", "EMPTY"),
         enable_thinking=llm.get("enable_thinking", False),
+    )
+
+
+def get_judge_client(config: Dict[str, Any], mock: bool = False):
+    if mock:
+        return MockLLMClient()
+    judge_cfg = config.get("judge", {})
+    llm_cfg = config["llm"]
+    return vLLMClient(
+        base_url=judge_cfg.get("base_url", llm_cfg["base_url"]),
+        model=judge_cfg.get("model", llm_cfg["model"]),
+        api_key=judge_cfg.get("api_key", llm_cfg.get("api_key", "EMPTY")),
+        enable_thinking=judge_cfg.get("enable_thinking", llm_cfg.get("enable_thinking", False)),
     )
