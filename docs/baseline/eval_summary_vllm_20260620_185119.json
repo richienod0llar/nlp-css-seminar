@@ -1,0 +1,10 @@
+{
+  "total_rows": 115,
+  "concept_accuracy_pct": 57.39,
+  "structure_accuracy_pct": 51.3,
+  "question_non_empty_pct": 99.13,
+  "question_exact_match_pct": 20.0,
+  "run_date": "2026-06-20",
+  "model": "/dss/dssmcmlfs01/pn25ju/pn25ju-dss-0000/models/Qwen3.5-9B",
+  "notes": "Isolated eval; enable_thinking=false. Full per-row CSV: outputs/eval_report_vllm_20260620_185119.csv"
+}

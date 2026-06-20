@@ -1,2 +1,4 @@
 # Runtime artifacts (vLLM startup logs, eval reports, etc.)
-logs/
+outputs/logs/
+eval_report_*.csv
+eval_summary_*.json
