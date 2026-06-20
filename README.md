@@ -2,15 +2,27 @@
 
 Prompt-driven pipeline to generate survey items from health indicators (Assertion Developer + Question Developer), evaluated against a gold set. Runs on LRZ with **Qwen3.5-9B** served via vLLM.
 
-**Status:** Phase 0 complete (env, GPU, vLLM). Phase 1 in progress: agents + mock eval work locally; real vLLM eval not run yet. See [docs/PLAN.md](docs/PLAN.md).
+**Status:** Phase 0 complete. Phase 1 baseline complete (2026-06-20): 115-row vLLM eval run; see [docs/BASELINE_REPORT.md](docs/BASELINE_REPORT.md). Next: prompt improvements, LLM-as-judge, optional LoRA fine-tuning. Full plan: [docs/PLAN.md](docs/PLAN.md).
+
+## Baseline results (Qwen3.5-9B, zero-shot)
+
+| Metric | Result |
+|--------|--------|
+| Concept accuracy | 57.4% |
+| Structure accuracy | 51.3% |
+| Question non-empty | 99.1% |
+| Question exact match | 20.0% |
 
 ## Repo layout
 
 ```
 nlp-css-seminar/
 ├── README.md
-├── config.yaml                 # LLM endpoint, mock flag, data paths
-├── docs/PLAN.md
+├── config.yaml                 # LLM endpoint, mock flag, eval settings
+├── docs/
+│   ├── PLAN.md
+│   ├── BASELINE_REPORT.md      # Initial 115-row baseline write-up
+│   └── baseline/               # Committed summary JSON snapshots
 ├── data/
 │   ├── gold_set.xlsx           # 115-row gold set
 │   └── concepts.yaml           # 22 concepts, structures, notation
@@ -22,7 +34,7 @@ nlp-css-seminar/
 │   ├── schema.py, normalize.py
 │   ├── prompts/                # agent prompts + prompt_loader.py
 │   └── evaluation/             # metrics.py, run_eval.py, judge.py (stub)
-├── run_test_pipeline.py        # quick pipeline demo
+├── run_test_pipeline.py        # quick single-indicator demo (stdout only)
 ├── test_load.py                # loader + prompt injection test
 ├── scripts/
 │   ├── activate_env.sh
@@ -31,7 +43,7 @@ nlp-css-seminar/
 │   ├── start_vllm.sh           # vLLM server (use this, not bare vllm serve)
 │   ├── smoke_test_llm.py
 │   └── smoke_test_transformers.py
-├── outputs/                    # eval reports + logs/ (gitignored)
+├── outputs/                    # eval reports + logs/ (logs gitignored)
 ├── environment.yml
 ├── requirements.txt
 └── requirements-llm.txt
@@ -72,16 +84,32 @@ cd ~/nlp-css-seminar
 python scripts/smoke_test_llm.py
 ```
 
-### 4. Pipeline (mock vs real)
+### 4. Pipeline and evaluation
 
-`config.yaml` has `mock: true` by default (no vLLM needed):
+`config.yaml` settings:
+
+```yaml
+llm:
+  mock: false              # true = MockLLMClient (no vLLM)
+  enable_thinking: false   # required for reliable JSON from Qwen3.5
+eval:
+  max_rows: null           # null = all 115 rows; 5 for quick test
+  output_dir: "outputs/"
+```
+
+**Single indicator (stdout only):**
 
 ```bash
 python run_test_pipeline.py
+```
+
+**Full baseline eval** (writes CSV + JSON to `outputs/`):
+
+```bash
 python -m src.sig.evaluation.run_eval
 ```
 
-For real vLLM: set `mock: false` in `config.yaml`, start vLLM, then rerun.
+For mock mode (no GPU): set `mock: true` and run the same commands.
 
 ## Scripts reference
 
@@ -92,7 +120,7 @@ For real vLLM: set `mock: false` in `config.yaml`, start vLLM, then rerun.
 | `start_vllm.sh` | Serve Qwen3.5-9B on port 8000 |
 | `smoke_test_llm.py` | Test vLLM OpenAI API |
 | `run_test_pipeline.py` | One-indicator pipeline demo |
-| `src/sig/evaluation/run_eval.py` | Eval on first 10 gold rows (mock by default) |
+| `src/sig/evaluation/run_eval.py` | Full gold-set eval (isolated mode) |
 
 ## Model
 
@@ -103,4 +131,5 @@ For real vLLM: set `mock: false` in `config.yaml`, start vLLM, then rerun.
 
 - vLLM and Python clients must run on the **same compute node**.
 - Use `scripts/start_vllm.sh`; bare `vllm serve` crashes on LRZ without the CUDA workarounds.
+- Eval uses **isolated mode**: question developer is scored on gold assertions, not chained predictions.
 - Git push: `ssh-add ~/.ssh/id_ed25519_github` if your key has a passphrase.

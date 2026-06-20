@@ -18,5 +18,5 @@ output:
   dir: "outputs/"
 
 eval:
-  max_rows: 5  # null = all 115 rows; set e.g. 5 for a quick test
+  max_rows: null  # null = all 115 rows; set e.g. 5 for a quick test
   output_dir: "outputs/"
