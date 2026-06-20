@@ -2,7 +2,7 @@ import re
 from typing import List, Optional
 
 # Structure codes in gold/predictions: xIe, xPRy, rDy, etc.
-_STRUCTURE_CODE_RE = re.compile(r"\b([xrgoc][A-Za-z]+)\b")
+_STRUCTURE_CODE_RE = re.compile(r"\b([xrgocv][A-Za-z]+)\b")
 
 
 def normalize_string(text: str) -> str:
@@ -11,6 +11,14 @@ def normalize_string(text: str) -> str:
         return ""
     text = text.strip().lower()
     return re.sub(r"\s+", "", text)
+
+
+def _concept_key(text: str) -> str:
+    """Normalize concept names; unify US/UK spelling variants."""
+    key = normalize_string(text)
+    key = key.replace("behavior", "behaviour")
+    key = key.replace("judgment", "judgement")
+    return key
 
 
 def extract_structure_code(text: str) -> str:
@@ -26,11 +34,11 @@ def extract_structure_code(text: str) -> str:
 
 def match_concept(raw_name: str, valid_concepts: List[str]) -> Optional[str]:
     """Map raw concept string to canonical name from concepts.yaml."""
-    norm_raw = normalize_string(raw_name)
-    if not norm_raw:
+    key = _concept_key(raw_name)
+    if not key:
         return None
     for concept in valid_concepts:
-        if normalize_string(concept) == norm_raw:
+        if _concept_key(concept) == key:
             return concept
     return None
 
@@ -39,7 +47,7 @@ def concepts_match(gold_concept: str, predicted_concept: str, valid_concepts: Li
     """Compare concepts after normalization; also accept canonical YAML names."""
     gold = match_concept(gold_concept, valid_concepts) or gold_concept
     pred = match_concept(predicted_concept, valid_concepts) or predicted_concept
-    return normalize_string(gold) == normalize_string(pred)
+    return _concept_key(gold) == _concept_key(pred)
 
 
 def structures_match(gold_structure: str, predicted_structure: str) -> bool:

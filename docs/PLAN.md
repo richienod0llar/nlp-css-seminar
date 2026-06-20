@@ -1,75 +1,80 @@
 ---
+
 name: Survey Item Generator
 overview: "Phase 0 complete (2026-06-16). Phase 1 baseline complete (2026-06-20): 115-row vLLM eval, reports in outputs/ + docs/BASELINE_REPORT.md. Next: judge, richer metrics, prompt tuning, optional LoRA."
 todos:
-  - id: github-auth-clone
-    content: "Set up GitHub SSH key on LRZ, add to GitHub account, clone git@github.com:richienod0llar/nlp-css-seminar.git into ~/nlp-css-seminar/, verify remote and branch."
-    status: completed
-  - id: lrz-conda-env
-    content: "Set up LRZ conda env (sig-llm, Python 3.11): install Miniconda if needed, create env, install PyTorch (CUDA 12.6) + vLLM + project deps from requirements.txt / requirements-llm.txt."
-    status: completed
-  - id: lrz-gpu-access
-    content: "Verify GPU access on LRZ: salloc/sbatch on an appropriate partition, srun into compute node, confirm nvidia-smi and conda env activate."
-    status: completed
-  - id: vllm-server-setup
-    content: "Configure and smoke-test vLLM server for Qwen3.5-9B from shared model path (interactive salloc first, then sbatch script)."
-    status: completed
-  - id: scaffold
-    content: "Finish project scaffold: config.yaml, src/sig/ package layout, data/gold_set.xlsx (move from repo-root data.xlsx). Partially done — env files, outputs/.gitignore, scripts/ exist."
-    status: completed
-  - id: concepts-ref
-    content: "Encode the annotation guide into data/concepts.yaml: 22 basic concepts (subjective/objective), the 3 structures, per-concept structure codes, and notation key."
-    status: completed
-  - id: gold-loader
-    content: Implement schema.py + gold-set loader for data.xlsx and a normalize.py for concept-name and structure-code matching (handles spelling/notation differences).
-    status: completed
-  - id: llm-client
-    content: "Implement llm_client.py: OpenAI-compatible client to vLLM with JSON-structured output and retry handling."
-    status: completed
-  - id: prompts
-    content: Write assertion_developer.md and question_developer.md system prompts from the guide rules, including the 3 worked reference rows as few-shot examples.
-    status: completed
-  - id: agents-pipeline
-    content: Implement AssertionDeveloper, QuestionDeveloper agents and pipeline.py (single indicator -> assertion -> question).
-    status: completed
-  - id: vllm-script
-    content: "scripts/start_vllm.sh done (interactive). Still need scripts/run_evaluation.sh sbatch wrapper for batch eval."
-    status: pending
-  - id: metrics
-    content: "Basic concept + structure exact-match in metrics.py with normalize.py wired. Still need confusion matrix export and question-format classification."
-    status: in_progress
-  - id: judge
-    content: Implement LLM-as-judge for concept-assertion and assertion-question alignment (1-5), model configurable.
-    status: pending
-  - id: eval-runner
-    content: "run_eval.py: isolated mode over gold set, CSV + JSON to outputs/. Full 115-row baseline run complete (2026-06-20)."
-    status: completed
-  - id: smoke-test-transformers
-    content: "Add scripts/smoke_test_transformers.py: tutorial-style HF load of Qwen3.5-9B from shared path; run on GPU node before vLLM."
-    status: completed
-  - id: smoke-test-llm
-    content: "scripts/smoke_test_llm.py: OpenAI client against local vLLM (/v1/models + /v1/chat/completions)."
-    status: completed
-  - id: smoke-test
-    content: "Run a few gold-set rows end-to-end (agents + parsing + scoring) before the full 115-row eval."
-    status: completed
-  - id: baseline-report
-    content: "Document initial 115-row vLLM baseline in docs/BASELINE_REPORT.md + committed summary JSON."
-    status: completed
+
+- id: github-auth-clone
+content: "Set up GitHub SSH key on LRZ, add to GitHub account, clone [git@github.com](mailto:git@github.com):richienod0llar/nlp-css-seminar.git into ~/nlp-css-seminar/, verify remote and branch."
+status: completed
+- id: lrz-conda-env
+content: "Set up LRZ conda env (sig-llm, Python 3.11): install Miniconda if needed, create env, install PyTorch (CUDA 12.6) + vLLM + project deps from requirements.txt / requirements-llm.txt."
+status: completed
+- id: lrz-gpu-access
+content: "Verify GPU access on LRZ: salloc/sbatch on an appropriate partition, srun into compute node, confirm nvidia-smi and conda env activate."
+status: completed
+- id: vllm-server-setup
+content: "Configure and smoke-test vLLM server for Qwen3.5-9B from shared model path (interactive salloc first, then sbatch script)."
+status: completed
+- id: scaffold
+content: "Finish project scaffold: config.yaml, src/sig/ package layout, data/gold_set.xlsx (move from repo-root data.xlsx). Partially done — env files, outputs/.gitignore, scripts/ exist."
+status: completed
+- id: concepts-ref
+content: "Encode the annotation guide into data/concepts.yaml: 22 basic concepts (subjective/objective), the 3 structures, per-concept structure codes, and notation key."
+status: completed
+- id: gold-loader
+content: Implement schema.py + gold-set loader for data.xlsx and a normalize.py for concept-name and structure-code matching (handles spelling/notation differences).
+status: completed
+- id: llm-client
+content: "Implement llm_client.py: OpenAI-compatible client to vLLM with JSON-structured output and retry handling."
+status: completed
+- id: prompts
+content: Write assertion_developer.md and question_developer.md system prompts from the guide rules, including the 3 worked reference rows as few-shot examples.
+status: completed
+- id: agents-pipeline
+content: Implement AssertionDeveloper, QuestionDeveloper agents and pipeline.py (single indicator -> assertion -> question).
+status: completed
+- id: vllm-script
+content: "scripts/start_vllm.sh done (interactive). Still need scripts/run_evaluation.sh sbatch wrapper for batch eval."
+status: pending
+- id: metrics
+content: "Basic concept + structure exact-match in metrics.py with normalize.py wired. Still need confusion matrix export and question-format classification."
+status: in_progress
+- id: judge
+content: Implement LLM-as-judge for concept-assertion and assertion-question alignment (1-5), model configurable.
+status: pending
+- id: eval-runner
+content: "run_eval.py: isolated mode over gold set, CSV + JSON to outputs/. Full 115-row baseline run complete (2026-06-20)."
+status: completed
+- id: smoke-test-transformers
+content: "Add scripts/smoke_test_transformers.py: tutorial-style HF load of Qwen3.5-9B from shared path; run on GPU node before vLLM."
+status: completed
+- id: smoke-test-llm
+content: "scripts/smoke_test_llm.py: OpenAI client against local vLLM (/v1/models + /v1/chat/completions)."
+status: completed
+- id: smoke-test
+content: "Run a few gold-set rows end-to-end (agents + parsing + scoring) before the full 115-row eval."
+status: completed
+- id: baseline-report
+content: "Document initial 115-row vLLM baseline in docs/BASELINE_REPORT.md + committed summary JSON."
+status: completed
 isProject: false
+
 ---
 
 ## Progress Update (2026-06-20)
 
 **Baseline complete.** Full 115-row eval on LRZ H100 with Qwen3.5-9B + vLLM 0.23.
 
-| Metric | Result |
-|--------|--------|
-| Concept accuracy | 57.4% |
-| Structure accuracy | 51.3% |
-| Concept + structure both correct | 42.6% |
-| Question non-empty | 99.1% |
-| Question exact match | 20.0% |
+
+| Metric                           | Result |
+| -------------------------------- | ------ |
+| Concept accuracy                 | 57.4%  |
+| Structure accuracy               | 51.3%  |
+| Concept + structure both correct | 42.6%  |
+| Question non-empty               | 99.1%  |
+| Question exact match             | 20.0%  |
+
 
 Report: [docs/BASELINE_REPORT.md](BASELINE_REPORT.md). Artifacts: `outputs/eval_report_vllm_20260620_185119.csv`, `outputs/eval_summary_vllm_20260620_185119.json`.
 
@@ -140,7 +145,9 @@ flowchart LR
   options --> evalH
 ```
 
-vLLM runs as an OpenAI-compatible server on an LRZ GPU compute node (not the login node) loading the local model at `/dss/dssmcmlfs01/pn25ju/pn25ju-dss-0000/models/Qwen3.5-9B`. The pipeline and harness are plain Python clients hitting that endpoint. All Python work runs inside a dedicated conda env **`sig-llm`** on LRZ, following the [Week 3 lrz-tutorial.pdf](../Week%203%20lrz-tutorial.pdf) workflow.
+
+
+vLLM runs as an OpenAI-compatible server on an LRZ GPU compute node (not the login node) loading the local model at `/dss/dssmcmlfs01/pn25ju/pn25ju-dss-0000/models/Qwen3.5-9B`. The pipeline and harness are plain Python clients hitting that endpoint. All Python work runs inside a dedicated conda env `**sig-llm**` on LRZ, following the [Week 3 lrz-tutorial.pdf](../Week%203%20lrz-tutorial.pdf) workflow.
 
 ```mermaid
 flowchart TB
@@ -156,9 +163,11 @@ flowchart TB
   client --> api
 ```
 
+
+
 ## GitHub repo connection (Phase 0 — first step)
 
-Remote: **https://github.com/richienod0llar/nlp-css-seminar** (private). All project code lives in **`~/nlp-css-seminar/`** after clone. Your home directory keeps seminar docs separately unless you choose to move them into the repo later.
+Remote: **[https://github.com/richienod0llar/nlp-css-seminar](https://github.com/richienod0llar/nlp-css-seminar)** (private). All project code lives in `**~/nlp-css-seminar/`** after clone. Your home directory keeps seminar docs separately unless you choose to move them into the repo later.
 
 **Status: done (2026-06-16).** Repo at `~/nlp-css-seminar/`. Remote: `git@github.com:richienod0llar/nlp-css-seminar.git`. Branch: `main`, pushed to GitHub (Phase 0 infra commits). SSH auth works (key has a passphrase; run `ssh-add ~/.ssh/id_ed25519_github` once per session before non-interactive git push).
 
@@ -221,11 +230,13 @@ If clone fails with "repository not found", confirm: (a) Bolei/Lanre added your 
 
 Keep protocol docs in home or add to repo as needed:
 
-| File | Location in repo (current) |
-|------|----------------------------|
-| Gold set | `data/gold_set.xlsx` |
+
+| File                | Location in repo (current) |
+| ------------------- | -------------------------- |
+| Gold set            | `data/gold_set.xlsx`       |
 | Protocol / LRZ docs | Repo root + `docs/PLAN.md` |
-| Implementation plan | `docs/PLAN.md` |
+| Implementation plan | `docs/PLAN.md`             |
+
 
 Add to `.gitignore` (root): `outputs/logs/`, `*.log`, `.env`, `__pycache__/`. Eval CSV/JSON in `outputs/` are local runtime artifacts; committed summaries live in `docs/baseline/`.
 
@@ -265,7 +276,7 @@ Based on [Week 3 lrz-tutorial.pdf](../Week%203%20lrz-tutorial.pdf). **Login node
 
 1. On-campus: MWN or eduroam. Off-campus: install [EduVPN](https://www.eduvpn.org/client-apps/).
 2. SSH: `ssh <username>@login.ai.lrz.de` (optional `Host lrz` in `~/.ssh/config`).
-3. Web portal (files, jobs): https://login.ai.lrz.de/
+3. Web portal (files, jobs): [https://login.ai.lrz.de/](https://login.ai.lrz.de/)
 4. Start **tmux** so work survives disconnects: `tmux`
 
 Paths:
@@ -290,7 +301,7 @@ Useful commands: `conda env list`, `conda activate sig-llm`, `conda list`, `cond
 
 **Status: done.** Miniconda at `~/miniconda3/`. Env `sig-llm` (Python 3.11). PyTorch pinned to cu126 (`torch==2.11.0+cu126`). vLLM `0.23.0`. Use `source ~/nlp-css-seminar/scripts/activate_env.sh` (activates conda + CUDA lib paths).
 
-Name: **`sig-llm`** (Python 3.11; tutorial uses `llm` — we use a project-specific name).
+Name: `**sig-llm`** (Python 3.11; tutorial uses `llm` — we use a project-specific name).
 
 ```bash
 conda create -n sig-llm python=3.11 -y
@@ -345,7 +356,7 @@ srun --pty bash
 conda activate sig-llm
 ```
 
-For Qwen3.5-9B + vLLM, **1 GPU** is enough (A100 40GB/80GB or H100 both fine). Enter the node with `srun --pty bash` or `srun --jobid=<JOBID> --overlap --pty bash` (job ID from https://login.ai.lrz.de/ dashboard).
+For Qwen3.5-9B + vLLM, **1 GPU** is enough (A100 40GB/80GB or H100 both fine). Enter the node with `srun --pty bash` or `srun --jobid=<JOBID> --overlap --pty bash` (job ID from [https://login.ai.lrz.de/](https://login.ai.lrz.de/) dashboard).
 
 ### 4. Sanity check: transformers load
 
@@ -365,19 +376,21 @@ The script sets `TORCH_CUDNN_SDPA_ENABLED=0` and `attn_implementation="eager"` t
 
 #### LRZ + vLLM 0.23 workarounds (required)
 
-LRZ H100 nodes ship **driver CUDA 12.2**. vLLM 0.23 wheels link **`libcudart.so.13`**. Without fixes you get:
+LRZ H100 nodes ship **driver CUDA 12.2**. vLLM 0.23 wheels link `**libcudart.so.13`**. Without fixes you get:
 
 - `CUDA driver version is insufficient for CUDA runtime version` (FlashAttention / custom ops)
 - FlashInfer JIT failures (`nvcc` / header mismatch)
 
 **Fixes in repo:**
 
-| File | Purpose |
-|------|---------|
-| `scripts/setup_cuda_libs.sh` | cu12 libs first, cu13 appended for extension load; `CUDA_HOME` for nvcc |
-| `scripts/activate_env.sh` | conda activate + sources setup_cuda_libs |
-| `scripts/start_vllm.sh` | Correct vLLM flags + logs to `outputs/logs/vllm_startup_*.log` |
-| `scripts/start_vllm_debug.sh` | Same with `VLLM_LOGGING_LEVEL=DEBUG` |
+
+| File                          | Purpose                                                                 |
+| ----------------------------- | ----------------------------------------------------------------------- |
+| `scripts/setup_cuda_libs.sh`  | cu12 libs first, cu13 appended for extension load; `CUDA_HOME` for nvcc |
+| `scripts/activate_env.sh`     | conda activate + sources setup_cuda_libs                                |
+| `scripts/start_vllm.sh`       | Correct vLLM flags + logs to `outputs/logs/vllm_startup_*.log`          |
+| `scripts/start_vllm_debug.sh` | Same with `VLLM_LOGGING_LEVEL=DEBUG`                                    |
+
 
 **Required vLLM flags** (already in `start_vllm.sh`):
 
@@ -409,7 +422,7 @@ python scripts/smoke_test_llm.py
 
 First chat request may take 30–60s (Triton JIT). Set `enable_thinking: false` in `config.yaml` for eval; Qwen3.5 otherwise emits "Thinking Process" prose instead of JSON.
 
-**`config.yaml` (Phase 1 — current):**
+`**config.yaml` (Phase 1 — current):**
 
 ```yaml
 llm:
@@ -483,21 +496,23 @@ vLLM works on LRZ with the workarounds above. Keep `smoke_test_transformers.py` 
 
 ### Exists today
 
-| Path | Status |
-|------|--------|
-| `config.yaml` | LLM + eval settings; `mock: false`, `enable_thinking: false` |
-| `data/gold_set.xlsx` | Gold set (115 rows) |
-| `data/concepts.yaml` | 22 concepts, structures, notation |
-| `src/sig/` | Agents, pipeline, LLM client, loader, prompts, eval |
-| `run_test_pipeline.py`, `test_load.py` | Local test scripts |
-| `docs/PLAN.md`, `docs/BASELINE_REPORT.md`, `README.md` | Documentation |
-| `docs/baseline/` | Committed eval summary JSON snapshots |
-| `environment.yml`, `requirements*.txt` | Dependencies |
-| `outputs/` | Runtime eval CSV/JSON + `logs/` (logs gitignored) |
-| `scripts/activate_env.sh`, `setup_cuda_libs.sh` | Conda + LRZ CUDA workaround |
-| `scripts/start_vllm.sh` | Interactive vLLM (working on H100) |
-| `scripts/smoke_test_*.py` | Phase 0 smoke tests |
-| Protocol doc, LRZ tutorial PDF | Repo root |
+
+| Path                                                   | Status                                                       |
+| ------------------------------------------------------ | ------------------------------------------------------------ |
+| `config.yaml`                                          | LLM + eval settings; `mock: false`, `enable_thinking: false` |
+| `data/gold_set.xlsx`                                   | Gold set (115 rows)                                          |
+| `data/concepts.yaml`                                   | 22 concepts, structures, notation                            |
+| `src/sig/`                                             | Agents, pipeline, LLM client, loader, prompts, eval          |
+| `run_test_pipeline.py`, `test_load.py`                 | Local test scripts                                           |
+| `docs/PLAN.md`, `docs/BASELINE_REPORT.md`, `README.md` | Documentation                                                |
+| `docs/baseline/`                                       | Committed eval summary JSON snapshots                        |
+| `environment.yml`, `requirements*.txt`                 | Dependencies                                                 |
+| `outputs/`                                             | Runtime eval CSV/JSON + `logs/` (logs gitignored)            |
+| `scripts/activate_env.sh`, `setup_cuda_libs.sh`        | Conda + LRZ CUDA workaround                                  |
+| `scripts/start_vllm.sh`                                | Interactive vLLM (working on H100)                           |
+| `scripts/smoke_test_*.py`                              | Phase 0 smoke tests                                          |
+| Protocol doc, LRZ tutorial PDF                         | Repo root                                                    |
+
 
 ### Still to build
 
@@ -513,17 +528,19 @@ vLLM works on LRZ with the workarounds above. Keep `smoke_test_transformers.py` 
 Primary mode is per-agent isolated evaluation (matches the doc: Question Developer is evaluated on gold assertions, not chained output).
 
 Assertion Developer (input = gold `input_indicator`):
+
 - Identification of basic concept (objective): accuracy of predicted vs gold `basic_concept` (normalized) + per-concept confusion matrix; `confusable_with` used for error analysis.
 - Correct semantic structure (objective): predicted structure number + code matches gold (normalized via the per-concept code table).
 - Concept-assertion alignment (rated 4/5 objective): LLM-as-judge 1-5 that the assertion faithfully represents the indicator.
 
 Question Developer (input = gold `assertion`):
+
 - Question format (objective): classify the generated question into one of the 4 formats (direct/indirect x interrogative/imperative) and record it.
 - Assertion-question alignment (rated 4/5 objective): LLM-as-judge 1-5 that the question represents the assertion.
 
 Report: overall accuracy, per-concept and per-structure breakdowns, mean judge scores, plus a per-row predictions-vs-gold table for manual spot-check.
 
-## Decisions I am making (adjust if you disagree)
+## Decisions made:
 
 - LLM-as-judge for the two alignment metrics, model configurable; default to a stronger local model (`Qwen2.5-72B-Instruct` is available on LRZ) to avoid self-grading bias. The 3 objective metrics need no judge.
 - Agents return strict JSON (vLLM guided/JSON decoding) for robust parsing.
@@ -533,21 +550,21 @@ Report: overall accuracy, per-concept and per-structure breakdowns, mean judge s
 
 **Phase 0 — Infra: complete (2026-06-16)**
 
-0. GitHub SSH auth + clone + push
-1. Conda env `sig-llm` + PyTorch cu126 + vLLM 0.23
-2. GPU access via `salloc` / `srun`
-3. Transformers smoke test
-4. vLLM server + API smoke test (LRZ CUDA workarounds)
+1. GitHub SSH auth + clone + push
+2. Conda env `sig-llm` + PyTorch cu126 + vLLM 0.23
+3. GPU access via `salloc` / `srun`
+4. Transformers smoke test
+5. vLLM server + API smoke test (LRZ CUDA workarounds)
 
 **Phase 1 — Pipeline + baseline: complete (2026-06-20)**
 
-5. ~~Scaffold, concepts, gold loader~~ done
-6. ~~Agents + prompts + mock pipeline~~ done
-7. ~~Connect to real vLLM + Qwen3.5 thinking fix~~ done
-8. ~~Isolated eval + 115-row run + reports~~ done
-9. Finish eval harness (judge, confusion matrix, question-format metric) — **in progress**
-10. Prompt tuning + optional LoRA SFT — **next**
-11. Full eval via sbatch — pending
+1. ~~Scaffold, concepts, gold loader~~ done
+2. ~~Agents + prompts + mock pipeline~~ done
+3. ~~Connect to real vLLM + Qwen3.5 thinking fix~~ done
+4. ~~Isolated eval + 115-row run + reports~~ done
+5. Finish eval harness (judge, confusion matrix, question-format metric) — **in progress**
+6. Prompt tuning + optional LoRA SFT — **next**
+7. Full eval via sbatch — pending
 
 ## Open items to confirm with the team (not blockers)
 
@@ -555,3 +572,4 @@ Report: overall accuracy, per-concept and per-structure breakdowns, mean judge s
 - Whether Miniconda is already installed on your account — **yes**, at `~/miniconda3/`.
 - Judge model: if running Qwen2.5-72B for LLM-as-judge, may need a second GPU job or a separate allocation.
 - Indicator granularity question already flagged for Caro in the guide (single facet vs broad topic) only affects future test-data expansion, not this baseline.
+

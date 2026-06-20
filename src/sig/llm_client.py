@@ -1,7 +1,7 @@
 import json
 import random
 import re
-from typing import Any, Dict, Literal
+from typing import Any, Dict, Literal, List, Optional
 
 from openai import OpenAI
 
@@ -16,6 +16,15 @@ ASSERTION_SCHEMA: Dict[str, Any] = {
     },
     "required": ["concept", "structure_code", "assertion"],
 }
+
+
+def build_assertion_schema(valid_concepts: Optional[List[str]] = None) -> Dict[str, Any]:
+    """Build assertion JSON schema; constrain concept to allowed names when provided."""
+    schema = json.loads(json.dumps(ASSERTION_SCHEMA))
+    if valid_concepts:
+        schema["properties"]["concept"] = {"type": "string", "enum": valid_concepts}
+    return schema
+
 
 QUESTION_SCHEMA: Dict[str, Any] = {
     "type": "object",
@@ -90,8 +99,12 @@ class vLLMClient:
         response_schema: ResponseSchema = "assertion",
         temperature: float = 0.0,
         max_tokens: int = 1024,
+        valid_concepts: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
-        schema = ASSERTION_SCHEMA if response_schema == "assertion" else QUESTION_SCHEMA
+        if response_schema == "assertion":
+            schema = build_assertion_schema(valid_concepts)
+        else:
+            schema = QUESTION_SCHEMA
         user_prompt = _build_user_prompt(user_prompt, self.enable_thinking)
         extra_body: Dict[str, Any] = {"guided_json": schema}
         if not self.enable_thinking:
@@ -162,8 +175,9 @@ class MockLLMClient:
         response_schema: ResponseSchema = "assertion",
         temperature: float = 0.0,
         max_tokens: int = 1024,
+        valid_concepts: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
-        del system_prompt, user_prompt, temperature, max_tokens
+        del system_prompt, user_prompt, temperature, max_tokens, valid_concepts
         if response_schema == "assertion":
             return random.choice(self._ASSERTION_RESPONSES)
         return random.choice(self._QUESTION_RESPONSES)
