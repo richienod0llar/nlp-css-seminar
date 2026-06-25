@@ -98,14 +98,14 @@
 <!-- 1. TITLE -->
 <section data-background-color="#00692c">
   <div style="color:#eafaf0;">
-    <div class="kicker" style="color:#aef0c8;">NLP x Computational Social Science · Seminar Project</div>
-    <h1 style="color:#fff; font-size:2.0em;">Generating Survey Items<br>with Large Language Models</h1>
+    <div class="kicker" style="color:#aef0c8;">NLP x CSS · Seminar Project</div>
+    <h1 style="color:#fff; font-size:2.0em;">Assertion and Question Developer Agents</h1>
     <p style="color:#d4ecdd; font-size:.92em; margin-top:.3em;">A prompt-driven pipeline that turns raw indicators into theory-grounded survey questions, evaluated against an expert gold set.</p>
     <hr style="border:none;border-top:1px solid #2f7d4f; margin:1em 0 .7em;">
     <p style="font-size:.66em; color:#a9d2ba;">
       Model: <strong style="color:#aef0c8;">Qwen3.5-9B</strong> &nbsp;·&nbsp; Serving: vLLM &nbsp;·&nbsp; Compute: LRZ H100 &nbsp;·&nbsp; 115-row gold set
     </p>
-    <p style="font-size:.62em; color:#8dbfa0; margin-top:1.0em;">Presenters: Rudraksha &amp; Lanre &nbsp;·&nbsp; 2026 &nbsp;<span style="opacity:.55;">(edit names on this slide)</span></p>
+    <p style="font-size:.62em; color:#8dbfa0; margin-top:1.0em;">Lanre Oriowo &amp; Rudraksha Samdhani &nbsp;·&nbsp; 2026 &nbsp;<span style="opacity:.55;"></span></p>
   </div>
   <aside class="notes">
     Welcome. Goal of this project: can an open LLM do an expert survey-methodology task, taking a vague "indicator" and producing a well-formed, theory-grounded survey question? I'll cover the problem, the data, our method and why we chose each piece, the results across four runs, and what we conclude.
@@ -114,12 +114,11 @@
 
 <!-- 2. AGENDA -->
 <section>
-  <div class="kicker">Roadmap</div>
-  <h2 class="bar">What this talk covers</h2>
+  <div class="kicker">Agenda</div>
   <div class="cols">
     <div>
       <div class="card"><h4>1 · The Problem</h4><p>Why survey-item writing is hard expert work</p></div>
-      <div class="card"><h4>2 · The Framework &amp; Data</h4><p>Caro's annotation theory + 115-row gold set</p></div>
+      <div class="card"><h4>2 · The Framework &amp; Data</h4><p>Annotation theory + 115-row gold set</p></div>
       <div class="card"><h4>3 · Methodology</h4><p>The pipeline, the model, and <em>why</em> each choice</p></div>
     </div>
     <div>
@@ -170,7 +169,7 @@
     <div class="card alt"><h4>3 Semantic Structures</h4><p>The grammar of the assertion, written as short <strong>codes</strong>: <span class="codey">xIe</span>, <span class="codey">rDy</span>, <span class="codey">xPRy</span> … Each concept allows only certain codes.</p></div>
   </div>
   <p class="small">Think of it as <strong>grammatical parsing for survey items</strong>: first classify the item, then build it to a template.</p>
-  <aside class="notes">This is Caro's annotation guide. Two things must be tagged: the concept (the "what") and the semantic structure (the "grammar", as a code). The codes look cryptic but each letter has a meaning: x = subject, I = link verb, e = evaluative adjective, so xIe is roughly "I am [good/satisfied]".</aside>
+  <aside class="notes">This is the annotation guide (provided). Two things must be tagged: the concept (the "what") and the semantic structure (the "grammar", as a code). The codes look cryptic but each letter has a meaning: x = subject, I = link verb, e = evaluative adjective, so xIe is roughly "I am [good/satisfied]".</aside>
 </section>
 
 <!-- 5. WORKED EXAMPLE -->
@@ -305,7 +304,7 @@
       </div>
     </div>
     <div>
-      <div class="card ok"><h4>A caveat we flag up front</h4>
+      <div class="card ok"><h4>One thing to keep in mind</h4>
         <p style="color:var(--ink);font-size:.86em;"><strong>Exact string match understates quality.</strong> "How satisfied are you with this product?" vs "…with your product?" are both perfect, but don't match exactly.</p>
         <p style="font-size:.82em;">→ <strong>Run 4</strong> adds an <em>LLM-as-judge</em> alignment score (1–5) that measures meaning, not strings (next section).</p>
       </div>
@@ -491,7 +490,7 @@
     <li><strong>Structure assignment</strong> is the genuine frontier: fine distinctions, rare codes, theory-dependent.</li>
     <li><strong>Question generation</strong> is essentially solved: the judge scores it <strong>4.99/5</strong>; the 18% exact match was a metric artefact, not a quality problem.</li>
     <li>Even when the <em>taxonomy label</em> is wrong, assertions still read as faithful paraphrases (judge 4.21 vs 4.61 when correct); taxonomy errors ≠ broken meaning.</li>
-    <li class="small"><strong>Caveat:</strong> the judge is the <em>same model</em> (self-grading) → scores may be optimistic; an external 72B judge is the honest next check.</li>
+    <li class="small"><strong>One catch:</strong> the judge is the <em>same model</em> (self-grading) → scores may be optimistic; an external 72B judge is the honest next check.</li>
   </ul>
   <aside class="notes">The interpretation in a few bullets. The split between "concept is easy, structure is hard" is the main scientific takeaway and it directly shapes the next steps.</aside>
 </section>
@@ -510,7 +509,7 @@
       <div class="card alt"><h4>Task ambiguity</h4><p>Some concept/structure distinctions are <strong>inherently debatable</strong>, even for experts: a ceiling on achievable accuracy.</p></div>
     </div>
   </div>
-  <aside class="notes">Naming the limitations pre-empts the toughest questions. The n=3 issue and the self-grading caveat are the two most important to acknowledge.</aside>
+  <aside class="notes">Naming the limitations pre-empts the toughest questions. The n=3 issue and the self-grading limitation are the two most important to acknowledge.</aside>
 </section>
 
 <!-- 21. CONCLUSION -->
@@ -525,25 +524,16 @@
     </ul>
     <hr style="border:none;border-top:1px solid #2f7d4f; margin:.7em 0;">
     <h3 style="color:#aef0c8;">Next steps</h3>
-    <p style="color:#d4ecdd; font-size:.82em;">① external judge (Qwen2.5-72B) to remove self-grade bias &nbsp;·&nbsp; ② structure-focused few-shot &nbsp;·&nbsp; ③ LoRA fine-tuning on the assertion stage &nbsp;·&nbsp; ④ expand &amp; balance the gold set</p>
+    <ul style="color:#d4ecdd; font-size:.82em;">
+      <li>External judge (Qwen2.5-72B) to remove self-grade bias</li>
+      <li>Structure-focused few-shot</li>
+      <li>LoRA fine-tuning on the assertion stage</li>
+      <li>Expand &amp; balance the gold set</li>
+    </ul>
   </div>
   <aside class="notes">Wrap up: the pipeline works, prompting got us a long way, structure is the open problem, and the next steps follow directly from the limitations: an external judge, targeted few-shot, light fine-tuning, and more data.</aside>
 </section>
 
-<!-- 22. QUICK Q&A -->
-<section>
-  <div class="kicker">Anticipated questions</div>
-  <h2 class="bar">Quick answers to the obvious "why?"s</h2>
-  <table>
-    <tr><th>Question</th><th>Answer</th></tr>
-    <tr><td>Why not GPT-4 / Claude?</td><td>Privacy, cost, reproducibility, and it must run on LRZ. An open model is the research-friendly choice, and we keep a stronger model in reserve as the <em>judge</em>.</td></tr>
-    <tr><td>Why 9B, not 72B?</td><td>Fits one GPU → fast iteration. The 72B is earmarked for LLM-as-judge to avoid self-grading bias.</td></tr>
-    <tr><td>Why isolated evaluation?</td><td>So one stage's errors don't contaminate the other, letting us localise the bottleneck (the assertion stage).</td></tr>
-    <tr><td>Is 76% good?</td><td>For a 22-way expert taxonomy with <strong>zero training</strong>, yes, and it was still climbing each iteration.</td></tr>
-    <tr><td>Isn't the judge the model grading itself?</td><td>Yes, a real caveat, so scores may be optimistic. We flag it and plan an <strong>external 72B judge</strong>. But judge vs exact-match correlate at <em>r≈0.04</em>, confirming exact match misses genuine quality.</td></tr>
-  </table>
-  <aside class="notes">A backup slide to field the predictable questions confidently. Use it if asked, or jump straight to thanks.</aside>
-</section>
 
 <!-- 23. THANK YOU -->
 <section data-background-color="#00692c">
@@ -578,6 +568,21 @@
     <div class="center"><img src="figures/fig11_mean_ia_by_concept.png" alt="Mean alignment by concept" style="max-height:420px;"><figcaption>Mean indicator→assertion score by gold concept</figcaption></div>
   </div>
   <aside class="notes">Left: assertions read as faithful even when the taxonomy label is wrong (4.21 vs 4.61). Right: alignment is high across nearly all concepts; Causal relationship and Feelings are the weakest.</aside>
+</section>
+
+<!-- 22. QUICK Q&A -->
+<section>
+  <div class="kicker">Anticipated questions</div>
+  <h2 class="bar">Quick answers to the obvious "why?"s</h2>
+  <table>
+    <tr><th>Question</th><th>Answer</th></tr>
+    <tr><td>Why not GPT-4 / Claude?</td><td>Privacy, cost, reproducibility, and it must run on LRZ. An open model is the research-friendly choice, and we keep a stronger model in reserve as the <em>judge</em>.</td></tr>
+    <tr><td>Why 9B, not 72B?</td><td>Fits one GPU → fast iteration. The 72B is earmarked for LLM-as-judge to avoid self-grading bias.</td></tr>
+    <tr><td>Why isolated evaluation?</td><td>So one stage's errors don't contaminate the other, letting us localise the bottleneck (the assertion stage).</td></tr>
+    <tr><td>Is 76% good?</td><td>For a 22-way expert taxonomy with <strong>zero training</strong>, yes, and it was still climbing each iteration.</td></tr>
+    <tr><td>Isn't the judge the model grading itself?</td><td>Yes, and scores may be optimistic because of that. We flag it and plan an <strong>external 72B judge</strong>. But judge vs exact-match correlate at <em>r≈0.04</em>, confirming exact match misses genuine quality.</td></tr>
+  </table>
+  <aside class="notes">A backup slide to field the predictable questions confidently. Use it if asked, or jump straight to thanks.</aside>
 </section>
 
 </div>
