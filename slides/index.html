@@ -69,6 +69,14 @@
 
     /* figure framing */
     .reveal .slides section img{ background:#fff; border:1px solid #d4e3d9; border-radius:8px; box-shadow:0 6px 22px rgba(20,50,30,.10); margin:.2em 0; }
+    .reveal .slides section img.slide-fig{
+      display:block;
+      width:100%;
+      height:400px;
+      object-fit:contain;
+      object-position:center;
+    }
+    .cols.fig-cols > div{ display:flex; flex-direction:column; align-items:center; }
     figcaption{ font-size:.6em; color:var(--muted); margin-top:.3em; }
 
     /* pipeline diagram */
@@ -82,7 +90,23 @@
     .pipe .arrow{ align-self:center; color:var(--accent); font-size:1.3em; font-weight:800; }
 
     .footer{ position:absolute; bottom:8px; left:18px; font-size:13px; color:#a7bbab; }
-    .reveal .slide-number{ background:transparent; color:#a7bbab; }
+    .reveal .slide-number{ background:transparent; color:#a7bbab; bottom:14px; right:14px; font-size:12px; }
+
+    /* LMU logo — fixed on every slide */
+    .lmu-logo{
+      position:absolute;
+      bottom:10px;
+      right:72px;
+      height:34px;
+      width:auto;
+      z-index:30;
+      pointer-events:none;
+      border:none;
+      border-radius:0;
+      box-shadow:none;
+      background:transparent;
+      margin:0;
+    }
 
     .codey{ font-family:Menlo,Consolas,monospace; font-size:.82em; background:#e9f3ec; border-radius:4px; padding:.04em .3em; color:#20452f; }
     .small{ font-size:.72em; color:var(--muted); }
@@ -93,6 +117,7 @@
 </head>
 <body>
 <div class="reveal">
+<img src="lmu_logo.png" alt="LMU München" class="lmu-logo">
 <div class="slides">
 
 <!-- 1. TITLE -->
@@ -319,7 +344,7 @@
   <h2 class="bar">Three iterations of prompting: steady gains</h2>
   <div class="cols">
     <div class="col-60 center">
-      <img src="figures/fig01_run_progression.png" alt="Accuracy across three runs" style="max-height:520px;">
+      <img class="slide-fig" src="figures/fig01_run_progression.png" alt="Accuracy across three runs">
     </div>
     <div class="col-40">
       <div class="card"><h4>Concept</h4><p style="color:var(--ink);font-size:1.0em;">57% → 70% → <strong>76%</strong></p></div>
@@ -352,7 +377,7 @@
   <h2 class="bar">Where we landed</h2>
   <div class="cols">
     <div class="col-60 center">
-      <img src="figures/fig02_pipeline_stages.png" alt="Best run outcomes" style="max-height:500px;">
+      <img class="slide-fig" src="figures/fig02_pipeline_stages.png" alt="Best run outcomes">
     </div>
     <div class="col-40">
       <div class="stats" style="flex-direction:column; gap:.4em;">
@@ -372,7 +397,7 @@
   <h2 class="bar">Some concepts are easy, some are hard</h2>
   <div class="cols">
     <div class="col-60 center">
-      <img src="figures/fig03_per_concept_accuracy.png" alt="Per-concept accuracy" style="max-height:520px;">
+      <img class="slide-fig" src="figures/fig03_per_concept_accuracy.png" alt="Per-concept accuracy">
     </div>
     <div class="col-40">
       <div class="card ok"><h4>Near-perfect</h4><p style="color:var(--ink)">Evaluation, Demographics, Preference, Importance, Knowledge, Norms, Rights</p></div>
@@ -388,7 +413,7 @@
   <h2 class="bar">Structure codes are the bottleneck</h2>
   <div class="cols">
     <div class="col-40 center">
-      <img src="figures/fig06_concept_structure_gap.png" alt="Concept vs structure gap" style="max-height:430px;">
+      <img class="slide-fig" src="figures/fig06_concept_structure_gap.png" alt="Concept vs structure gap">
     </div>
     <div class="col-60">
       <ul>
@@ -406,9 +431,9 @@
 <section>
   <div class="kicker">Key Findings: error analysis</div>
   <h2 class="bar">Where it goes wrong (and why it's reasonable)</h2>
-  <div class="cols">
-    <div class="center"><img src="figures/fig07_top_concept_confusions.png" alt="Top concept confusions" style="max-height:300px;"><figcaption>Concept confusions</figcaption></div>
-    <div class="center"><img src="figures/fig07_top_structure_confusions.png" alt="Top structure confusions" style="max-height:300px;"><figcaption>Structure-code confusions</figcaption></div>
+  <div class="cols fig-cols">
+    <div class="center"><img class="slide-fig" src="figures/fig07_top_concept_confusions.png" alt="Top concept confusions"><figcaption>Concept confusions</figcaption></div>
+    <div class="center"><img class="slide-fig" src="figures/fig07_top_structure_confusions.png" alt="Top structure confusions"><figcaption>Structure-code confusions</figcaption></div>
   </div>
   <p class="small"><strong>Cognitive judgment→Events</strong>, <strong>Place/Quantities/Time→Demographics</strong>, <strong>Policies→Norms</strong> · structure: <strong><span class="codey">xFD→rFDy</span></strong> (future event vs intention), <span class="codey">xPRy↔xIpr</span>. These are <em>semantically adjacent</em>: the model lands one cell away, not wildly off.</p>
   <aside class="notes">Reassuringly, the errors are "near misses": the model confuses genuinely related categories, not random ones. Place/Time/Quantities all collapse toward Demographics because they're all factual descriptors of the respondent.</aside>
@@ -446,7 +471,7 @@
   <h2 class="bar">LLM-as-judge: semantic alignment scores (1–5)</h2>
   <div class="cols">
     <div class="col-60 center">
-      <img src="figures/fig08_judge_distributions.png" alt="Judge score distributions" style="max-height:430px;">
+      <img class="slide-fig" src="figures/fig08_judge_distributions.png" alt="Judge score distributions">
     </div>
     <div class="col-40">
       <div class="stats" style="flex-direction:column; gap:.4em;">
@@ -466,7 +491,7 @@
   <h2 class="bar">Exact match was measuring the wrong thing</h2>
   <div class="cols">
     <div class="col-60 center">
-      <img src="figures/fig09_exact_match_vs_judge.png" alt="Exact match vs judge" style="max-height:420px;">
+      <img class="slide-fig" src="figures/fig09_exact_match_vs_judge.png" alt="Exact match vs judge">
     </div>
     <div class="col-40">
       <ul style="font-size:.92em;">
@@ -552,9 +577,9 @@
 <section>
   <div class="kicker">Appendix: backup</div>
   <h2 class="bar">Full confusion heatmaps</h2>
-  <div class="cols">
-    <div class="center"><img src="figures/fig04_concept_confusion_heatmap.png" alt="Concept confusion heatmap" style="max-height:430px;"><figcaption>Basic concepts</figcaption></div>
-    <div class="center"><img src="figures/fig05_structure_confusion_heatmap.png" alt="Structure confusion heatmap" style="max-height:430px;"><figcaption>Semantic structure codes</figcaption></div>
+  <div class="cols fig-cols">
+    <div class="center"><img class="slide-fig" src="figures/fig04_concept_confusion_heatmap.png" alt="Concept confusion heatmap"><figcaption>Basic concepts</figcaption></div>
+    <div class="center"><img class="slide-fig" src="figures/fig05_structure_confusion_heatmap.png" alt="Structure confusion heatmap"><figcaption>Semantic structure codes</figcaption></div>
   </div>
   <aside class="notes">Backup detail for deep-dive questions on specific confusions.</aside>
 </section>
@@ -563,9 +588,9 @@
 <section>
   <div class="kicker">Appendix: backup (Run 4 judge)</div>
   <h2 class="bar">Judge scores in detail</h2>
-  <div class="cols">
-    <div class="center"><img src="figures/fig10_ia_by_concept_correctness.png" alt="Alignment vs taxonomy correctness" style="max-height:420px;"><figcaption>Assertion alignment when concept is correct vs incorrect</figcaption></div>
-    <div class="center"><img src="figures/fig11_mean_ia_by_concept.png" alt="Mean alignment by concept" style="max-height:420px;"><figcaption>Mean indicator→assertion score by gold concept</figcaption></div>
+  <div class="cols fig-cols">
+    <div class="center"><img class="slide-fig" src="figures/fig10_ia_by_concept_correctness.png" alt="Alignment vs taxonomy correctness"><figcaption>Assertion alignment when concept is correct vs incorrect</figcaption></div>
+    <div class="center"><img class="slide-fig" src="figures/fig11_mean_ia_by_concept.png" alt="Mean alignment by concept"><figcaption>Mean indicator→assertion score by gold concept</figcaption></div>
   </div>
   <aside class="notes">Left: assertions read as faithful even when the taxonomy label is wrong (4.21 vs 4.61). Right: alignment is high across nearly all concepts; Causal relationship and Feelings are the weakest.</aside>
 </section>
@@ -603,6 +628,17 @@
     transitionSpeed: 'fast',
     plugins: (typeof RevealNotes !== 'undefined') ? [ RevealNotes ] : []
   });
+
+  function updateLmuLogo() {
+    const slide = Reveal.getCurrentSlide();
+    const logo = document.querySelector('.lmu-logo');
+    if (!logo || !slide) return;
+    const isGreen = slide.getAttribute('data-background-color') === '#00692c';
+    logo.style.display = isGreen ? 'none' : 'block';
+  }
+
+  Reveal.on('ready', updateLmuLogo);
+  Reveal.on('slidechanged', updateLmuLogo);
 </script>
 </body>
 </html>
