@@ -2,17 +2,20 @@
 
 Prompt-driven pipeline to generate survey items from health indicators (Assertion Developer + Question Developer), evaluated against a gold set. Runs on LRZ with **Qwen3.5-9B** served via vLLM.
 
-**Status:** Phase 1b in progress (2026-06-25): Run 3 at **75.7%** concept / **62.6%** structure / **100%** question coverage. See [docs/BASELINE_REPORT.md](docs/BASELINE_REPORT.md). Next: LLM-as-judge run, structure pass for `xFD`/`xFy`. Full plan: [docs/PLAN.md](docs/PLAN.md).
+**Status:** Phase 1b complete (2026-06-25): Run 4 with judge — **75.7%** concept / **62.6%** structure / **4.99/5** question alignment. See [docs/BASELINE_REPORT.md](docs/BASELINE_REPORT.md). Next: structure pass for `xFD`/`xFy`, optional external judge or LoRA. Full plan: [docs/PLAN.md](docs/PLAN.md).
 
-## Baseline results (Qwen3.5-9B, zero-shot)
+## Baseline results (Qwen3.5-9B, zero-shot + judge)
 
-| Metric | Run 1 | Run 2 | Run 3 (current) |
-|--------|-------|-------|-----------------|
-| Concept accuracy | 57.4% | 69.6% | **75.7%** |
-| Structure accuracy | 51.3% | 55.7% | **62.6%** |
-| Both correct | 42.6% | 53.0% | **60.9%** |
-| Question non-empty | 99.1% | 99.1% | **100%** |
-| Question exact match | 20.0% | 20.0% | 18.3% |
+| Metric | Run 3 | Run 4 (+ judge) |
+|--------|-------|-----------------|
+| Concept accuracy | **75.7%** | 75.7% |
+| Structure accuracy | **62.6%** | 62.6% |
+| Question non-empty | **100%** | 100% |
+| Question exact match | 18.3% | 18.3% |
+| Mean IA judge (1–5) | — | **4.51** |
+| Mean AQ judge (1–5) | — | **4.99** |
+
+Prompt-engineering progression (Runs 1→3): concept 57% → 70% → **76%**; structure 51% → 56% → **63%**.
 
 ## Repo layout
 

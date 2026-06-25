@@ -1,7 +1,7 @@
 ---
 
 name: Survey Item Generator
-overview: "Phase 0 complete. Run 3 eval (2026-06-25): 75.7% concept / 62.6% structure / 100% question coverage. Next: LLM-as-judge run, xFD/xFy structure pass, optional LoRA."
+overview: "Phase 1b complete (2026-06-25): Run 4 judge eval — 75.7% concept, 62.6% structure, 4.99/5 question alignment. Next: xFD structure pass, external judge or LoRA."
 todos:
 
 - id: github-auth-clone
@@ -41,8 +41,8 @@ status: completed
 content: "metrics.py: exact-match, per-concept/structure breakdown, confusion matrix export, question-format distribution."
 status: completed
 - id: judge
-content: "judge.py implemented; run with eval.run_judge: true. Full 115-row judge eval pending."
-status: in_progress
+content: "judge.py implemented; Run 4 complete (20260625_160020): mean IA 4.51, mean AQ 4.99. Optional: external judge model."
+status: completed
 - id: eval-runner
 content: "run_eval.py: isolated mode over gold set, CSV + JSON to outputs/. Full 115-row baseline run complete (2026-06-20)."
 status: completed
@@ -64,7 +64,26 @@ isProject: false
 
 ---
 
-## Progress Update (2026-06-25)
+---
+
+## Progress Update (2026-06-25, Run 4 judge)
+
+**Run 4 complete** (`eval.run_judge: true`, timestamp `20260625_160020`). Same objective metrics as Run 3; adds semantic alignment scores.
+
+| Metric | Result |
+|--------|--------|
+| Mean indicator→assertion judge | **4.51 / 5** |
+| Mean assertion→question judge | **4.99 / 5** |
+| Question exact match | 18.3% |
+| Non-exact but judge ≥ 4 | 94 / 94 rows |
+
+Report: [docs/BASELINE_REPORT.md](BASELINE_REPORT.md). Figures: `docs/figures/fig08`–`fig11`.
+
+**Next:** structure pass for `xFD`/`xFy`; external judge (Qwen2.5-72B) or LoRA on assertion stage.
+
+---
+
+## Progress Update (2026-06-25, Run 3)
 
 **Run 3 complete** (structure prompt pass + JSON repair + richer metrics). `eval.run_judge: false`.
 

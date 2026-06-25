@@ -23,4 +23,4 @@ output:
 eval:
   max_rows: null  # null = all 115 rows; set e.g. 5 for a quick test
   output_dir: "outputs/"
-  run_judge: false  # true = LLM-as-judge scores (2 extra calls per row)
+  run_judge: true  # true = LLM-as-judge scores (2 extra calls per row)
