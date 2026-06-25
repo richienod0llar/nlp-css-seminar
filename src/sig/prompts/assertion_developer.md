@@ -24,15 +24,35 @@ Use these rules when indicators overlap:
 | What the respondent **prefers**, wants changed, or would choose | **Preference** | `xIpr` or `xPRy` |
 | Intention or likelihood to act ("would recommend", "repurchase intention") | **Action tendencies** | `rFDy` or `xFD` |
 | Past or habitual **deeds**, frequency, involvement ("how often", "do you smoke") | **Behaviour** | `rDy` or `rD` |
+| Something that **happened** or occurred ("experienced", "witnessed") | **Events** | `xDy` or `xD` |
+| **Location** or where something usually happens | **Place** | `xDpI` |
 | What matters to the person ("valued aspect") | **Values** | `vIi` |
 | How important something is | **Importance** | `xIi` |
 
-**Structure disambiguation:**
-- `xPRy` = preference comparing options (prefer A over B)
-- `xIpr` = preference without explicit comparison object
-- `xFD` / `xFDy` = future expectation (something will happen)
-- `rFDy` = future deed / intention to act
-- `vIi` = values (Values concept); `xIi` = importance (Importance concept)
+**Structure disambiguation (read carefully):**
+
+| Code | Use when |
+|------|----------|
+| `xPRy` | **Preference** — respondent prefers a specific option, method, change, or improvement (default for Preference) |
+| `xIpr` | Preference structure 1 only — general preference without a distinct compared object (rare) |
+| `xFDy` | **Expectations of future events** — forecast about what will happen (`x` subject + future deed + object) |
+| `xFD` | Future expectation, structure 3 variant |
+| `rFDy` | **Action tendencies** — intention or likelihood the respondent will act |
+| `xPyc` / `xPy` | **Evaluative belief** — whether something met criteria or standards |
+| `rDy` | **Behaviour** — habitual or repeated deeds, frequency ("how often") |
+| `rD` | Single or general deed (Behaviour, structure 3) |
+| `vIi` | **Values** — what matters to the person |
+| `xIi` | **Importance** — how important something is |
+| `xDy` / `xD` | **Events** — something that happened or occurs |
+| `xDpI` | **Place** or **Procedures** — location or where/how something is done |
+| `xId` | **Demographics** — identity or status descriptor |
+| `xFy` / `xIf` | **Feelings** — emotional state |
+
+**Preference rule:** When the concept is Preference, use **`xPRy`** unless the indicator is a bare preference statement with no specific object (then `xIpr`).
+
+**Action tendencies vs Expectations:** "Would recommend", "intend to purchase", "open to follow-up" → Action tendencies (`rFDy`). "Economy will improve", "expect to change jobs" → Expectations of future events (`xFDy`).
+
+**Behaviour vs Demographics:** Frequency or habitual action ("how often", "do you smoke") → Behaviour (`rDy`). Static identity/status ("employment status", "department") → Demographics (`xId`).
 
 # WORKED EXAMPLES
 
@@ -130,4 +150,52 @@ Output:
   "concept": "Behaviour",
   "structure_code": "rDy",
   "assertion": "I engage in physical exercise regularly."
+}
+
+## Example 7
+
+Input Indicator:
+Preferred contact method
+
+Reasoning:
+- Concept: Preference
+- Structure: xPRy (prefer a specific contact method — use xPRy for Preference with a distinct object)
+
+Output:
+{
+  "concept": "Preference",
+  "structure_code": "xPRy",
+  "assertion": "I prefer to be contacted by a specific method."
+}
+
+## Example 8
+
+Input Indicator:
+Expectation that the national economy will improve next year
+
+Reasoning:
+- Concept: Expectations of future events (forecast, not preference or evaluative belief)
+- Structure: xFDy
+
+Output:
+{
+  "concept": "Expectations of future events",
+  "structure_code": "xFDy",
+  "assertion": "I expect the national economy to improve next year."
+}
+
+## Example 9
+
+Input Indicator:
+Experience or witnessing bullying
+
+Reasoning:
+- Concept: Events (something that happened)
+- Structure: xDy
+
+Output:
+{
+  "concept": "Events",
+  "structure_code": "xDy",
+  "assertion": "I have experienced or witnessed bullying."
 }
