@@ -2,16 +2,17 @@
 
 Prompt-driven pipeline to generate survey items from health indicators (Assertion Developer + Question Developer), evaluated against a gold set. Runs on LRZ with **Qwen3.5-9B** served via vLLM.
 
-**Status:** Phase 0 complete. Phase 1 baseline complete (2026-06-20): 115-row vLLM eval; prompt-tuning rerun at **69.6%** concept accuracy. See [docs/BASELINE_REPORT.md](docs/BASELINE_REPORT.md). Next: LLM-as-judge, structure prompt pass, optional LoRA. Full plan: [docs/PLAN.md](docs/PLAN.md).
+**Status:** Phase 1b in progress (2026-06-25): Run 3 at **75.7%** concept / **62.6%** structure / **100%** question coverage. See [docs/BASELINE_REPORT.md](docs/BASELINE_REPORT.md). Next: LLM-as-judge run, structure pass for `xFD`/`xFy`. Full plan: [docs/PLAN.md](docs/PLAN.md).
 
 ## Baseline results (Qwen3.5-9B, zero-shot)
 
-| Metric | Run 1 (initial) | Run 2 (prompt tuning) |
-|--------|-----------------|----------------------|
-| Concept accuracy | 57.4% | **69.6%** |
-| Structure accuracy | 51.3% | **55.7%** |
-| Question non-empty | 99.1% | 99.1% |
-| Question exact match | 20.0% | 20.0% |
+| Metric | Run 1 | Run 2 | Run 3 (current) |
+|--------|-------|-------|-----------------|
+| Concept accuracy | 57.4% | 69.6% | **75.7%** |
+| Structure accuracy | 51.3% | 55.7% | **62.6%** |
+| Both correct | 42.6% | 53.0% | **60.9%** |
+| Question non-empty | 99.1% | 99.1% | **100%** |
+| Question exact match | 20.0% | 20.0% | 18.3% |
 
 ## Repo layout
 

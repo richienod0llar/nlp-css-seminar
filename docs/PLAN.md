@@ -1,7 +1,7 @@
 ---
 
 name: Survey Item Generator
-overview: "Phase 0 complete (2026-06-16). Phase 1 baseline complete (2026-06-20): 115-row vLLM eval, reports in outputs/ + docs/BASELINE_REPORT.md. Next: judge, richer metrics, prompt tuning, optional LoRA."
+overview: "Phase 0 complete. Run 3 eval (2026-06-25): 75.7% concept / 62.6% structure / 100% question coverage. Next: LLM-as-judge run, xFD/xFy structure pass, optional LoRA."
 todos:
 
 - id: github-auth-clone
@@ -35,14 +35,14 @@ status: completed
 content: Implement AssertionDeveloper, QuestionDeveloper agents and pipeline.py (single indicator -> assertion -> question).
 status: completed
 - id: vllm-script
-content: "scripts/start_vllm.sh done (interactive). Still need scripts/run_evaluation.sh sbatch wrapper for batch eval."
-status: pending
+content: "scripts/start_vllm.sh (interactive) + scripts/run_evaluation.sh sbatch wrapper."
+status: completed
 - id: metrics
-content: "Basic concept + structure exact-match in metrics.py with normalize.py wired. Still need confusion matrix export and question-format classification."
-status: in_progress
+content: "metrics.py: exact-match, per-concept/structure breakdown, confusion matrix export, question-format distribution."
+status: completed
 - id: judge
-content: Implement LLM-as-judge for concept-assertion and assertion-question alignment (1-5), model configurable.
-status: pending
+content: "judge.py implemented; run with eval.run_judge: true. Full 115-row judge eval pending."
+status: in_progress
 - id: eval-runner
 content: "run_eval.py: isolated mode over gold set, CSV + JSON to outputs/. Full 115-row baseline run complete (2026-06-20)."
 status: completed
@@ -59,6 +59,27 @@ status: completed
 content: "Document initial 115-row vLLM baseline in docs/BASELINE_REPORT.md + committed summary JSON."
 status: completed
 isProject: false
+
+---
+
+---
+
+## Progress Update (2026-06-25)
+
+**Run 3 complete** (structure prompt pass + JSON repair + richer metrics). `eval.run_judge: false`.
+
+| Metric | Run 2 | Run 3 | Δ |
+|--------|-------|-------|---|
+| Concept accuracy | 69.6% | **75.7%** | +6.1 pp |
+| Structure accuracy | 55.7% | **62.6%** | +6.9 pp |
+| Both correct | 53.0% | **60.9%** | +7.8 pp |
+| Question non-empty | 99.1% | **100%** | +0.9 pp |
+
+Report: [docs/BASELINE_REPORT.md](BASELINE_REPORT.md). Artifacts: `docs/baseline/eval_*_20260625_134833.*`
+
+**Highlights:** Preference structure 40%→90%; row 114 JSON fixed; cumulative Run 1→Run 3: +18.3 pp concept.
+
+**Next:** LLM-as-judge run (`eval.run_judge: true`); structure pass for `xFD`/`xFy`/`vIi`; optional LoRA if structure plateaus.
 
 ---
 
