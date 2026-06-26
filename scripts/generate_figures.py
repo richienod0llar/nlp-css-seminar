@@ -66,10 +66,17 @@ RUN_LABELS = {
 RUN_ORDER = ["20260620_185119", "20260620_194152", "20260625_134833"]
 
 
-def _save(fig: plt.Figure, out_dir: Path, stem: str) -> None:
+def _save(fig: plt.Figure, out_dir: Path, stem: str, tight: bool = True) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
+    # tight=False keeps the exact figsize canvas (no content-based cropping), so
+    # sibling figures stay pixel-identical regardless of label lengths. Passing
+    # bbox_inches=None falls back to the rcParam ("tight"), so build an explicit
+    # full-canvas Bbox instead.
+    from matplotlib.transforms import Bbox
+
+    bbox = "tight" if tight else Bbox([[0, 0], fig.get_size_inches()])
     for ext in ("pdf", "png"):
-        fig.savefig(out_dir / f"{stem}.{ext}")
+        fig.savefig(out_dir / f"{stem}.{ext}", bbox_inches=bbox)
     plt.close(fig)
 
 
@@ -303,7 +310,7 @@ def fig06_concept_structure_gap(summary_path: Path, out_dir: Path) -> None:
             for k, v in per.items()
         ]
     )
-    fig, ax = plt.subplots(figsize=(5, 4.5))
+    fig, ax = plt.subplots(figsize=(5.6, 5.0))
     sizes = 30 + df["n"] * 12
     ax.scatter(
         df["concept_acc"],
@@ -319,22 +326,42 @@ def fig06_concept_structure_gap(summary_path: Path, out_dir: Path) -> None:
         zorder=3,
     )
     ax.plot([0, 100], [0, 100], "--", color=C_NEUTRAL, linewidth=1, label="Equal accuracy")
-    for _, r in df.iterrows():
-        if abs(r["gap"]) >= 40 or (r["concept_acc"] >= 80 and r["structure_acc"] <= 20):
-            ax.annotate(
-                r["concept"],
-                (r["concept_acc"], r["structure_acc"]),
-                fontsize=6,
-                ha="left",
-                va="bottom",
-                xytext=(3, 3),
-                textcoords="offset points",
-            )
+
+    # Label only the off-diagonal (interesting) concepts. Labels sit close to
+    # their points with short connectors and a small vertical stagger so the
+    # clustered low-structure points stay readable without long crossing lines.
+    sel = df[(df["gap"].abs() >= 40) | ((df["concept_acc"] >= 80) & (df["structure_acc"] <= 20))]
+    sel = sel.sort_values("concept_acc").reset_index(drop=True)
+    # Small offsets (in display points) per label, tuned so neighbours land on
+    # alternating rows. Keys are concept names for stable, predictable placement.
+    offsets = {
+        "Feelings": (0, 9, "center"),
+        "Procedures": (0, 22, "center"),
+        "Action tendencies": (-2, 9, "center"),
+        "Expectations of future events": (-4, 40, "right"),
+        "Evaluative belief": (-8, 6, "right"),
+        "Policies": (10, 6, "left"),
+    }
+    for _, r in sel.iterrows():
+        cx, cy = r["concept_acc"], r["structure_acc"]
+        dx, dy, ha = offsets.get(r["concept"], (0, 10, "center"))
+        ax.annotate(
+            r["concept"],
+            xy=(cx, cy),
+            xytext=(dx, dy),
+            textcoords="offset points",
+            fontsize=5.5,
+            ha=ha,
+            va="bottom",
+            zorder=6,
+            arrowprops=dict(arrowstyle="-", color="#b0b0b0", lw=0.45, shrinkA=0.5, shrinkB=2),
+            bbox=dict(boxstyle="round,pad=0.12", fc="white", ec="none", alpha=0.8),
+        )
     ax.set_xlabel("Concept accuracy (%)")
     ax.set_ylabel("Structure accuracy (%)")
     ax.set_title("Concept–structure accuracy gap by basic concept")
     ax.set_xlim(-5, 105)
-    ax.set_ylim(-5, 105)
+    ax.set_ylim(-5, 110)
     ax.set_aspect("equal")
     sm = plt.cm.ScalarMappable(cmap="RdYlGn", norm=plt.Normalize(-80, 80))
     sm.set_array([])
@@ -353,6 +380,9 @@ def fig07_top_confusion_pairs(confusion_path: Path, out_dir: Path, title: str, s
     df = df.sort_values("count", ascending=False).head(12)
     df["pair"] = df.iloc[:, 0].astype(str) + " → " + df.iloc[:, 1].astype(str)
     fig, ax = plt.subplots(figsize=(6, 3.8))
+    # Fixed margins (not tight bbox) so both fig07 charts share identical
+    # canvas dimensions despite different y-label lengths.
+    fig.subplots_adjust(left=0.34, right=0.96, top=0.88, bottom=0.15)
     y = np.arange(len(df))
     ax.barh(y, df["count"], color=C_STRUCTURE, edgecolor="white", linewidth=0.5)
     ax.set_yticks(y)
@@ -362,7 +392,7 @@ def fig07_top_confusion_pairs(confusion_path: Path, out_dir: Path, title: str, s
     ax.set_title(title)
     for i, (cnt, pair) in enumerate(zip(df["count"], df["pair"])):
         ax.text(cnt + 0.05, i, str(int(cnt)), va="center", fontsize=8)
-    _save(fig, out_dir, stem)
+    _save(fig, out_dir, stem, tight=False)
 
 
 def fig08_judge_distributions(report_path: Path, out_dir: Path) -> None:
@@ -407,22 +437,15 @@ def fig09_exact_match_vs_judge(report_path: Path, out_dir: Path) -> None:
     values = [exact_pct, judge_ge4_pct, mean_aq * 20]  # scale mean to 0–100 for viz
     display = [f"{exact_pct:.1f}%", f"{judge_ge4_pct:.1f}%", f"{mean_aq:.2f}"]
     colors = [C_NEUTRAL, C_QUESTION, C_BOTH]
-    fig, ax = plt.subplots(figsize=(4.5, 3.5))
-    bars = ax.bar(labels, values, color=colors, edgecolor="white", linewidth=0.5)
-    ax.set_ylabel("Rate (%) — mean score scaled ×20 for third bar")
+    fig, ax = plt.subplots(figsize=(5.0, 3.8))
+    fig.subplots_adjust(left=0.13, right=0.97, top=0.88, bottom=0.13)
+    bars = ax.bar(labels, values, color=colors, edgecolor="white", linewidth=0.5, width=0.62)
+    ax.set_ylabel("Rate (%)  ·  mean score ×20")
     ax.set_title("Question quality: exact match vs semantic judge")
-    ax.set_ylim(0, 108)
+    ax.set_ylim(0, 112)
     for bar, disp, val in zip(bars, display, values):
-        ax.text(bar.get_x() + bar.get_width() / 2, val + 2, disp, ha="center", fontsize=9)
-    ax.text(
-        0.5,
-        0.04,
-        "94/94 non-exact questions scored ≥4 by judge (r=0.04 with exact match)",
-        transform=ax.transAxes,
-        fontsize=7,
-        color="#444444",
-    )
-    _save(fig, out_dir, "fig09_exact_match_vs_judge")
+        ax.text(bar.get_x() + bar.get_width() / 2, val + 2.5, disp, ha="center", fontsize=9)
+    _save(fig, out_dir, "fig09_exact_match_vs_judge", tight=False)
 
 
 def fig10_ia_by_concept_correctness(report_path: Path, out_dir: Path) -> None:

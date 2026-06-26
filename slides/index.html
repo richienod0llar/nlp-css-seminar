@@ -78,6 +78,14 @@
     }
     .cols.fig-cols > div{ display:flex; flex-direction:column; align-items:center; }
     figcaption{ font-size:.6em; color:var(--muted); margin-top:.3em; }
+    .fig-footer{
+      font-size:.56em;
+      color:var(--muted);
+      margin:.2em 0 0;
+      line-height:1.25;
+      text-align:center;
+    }
+    .fig-footer strong{ color:var(--accent2); }
 
     /* pipeline diagram */
     .pipe{ display:flex; align-items:stretch; gap:.5em; margin:.6em 0; }
@@ -127,9 +135,6 @@
     <h1 style="color:#fff; font-size:2.0em;">Assertion and Question Developer Agents</h1>
     <p style="color:#d4ecdd; font-size:.92em; margin-top:.3em;">A prompt-driven pipeline that turns raw indicators into theory-grounded survey questions, evaluated against an expert gold set.</p>
     <hr style="border:none;border-top:1px solid #2f7d4f; margin:1em 0 .7em;">
-    <p style="font-size:.66em; color:#a9d2ba;">
-      Model: <strong style="color:#aef0c8;">Qwen3.5-9B</strong> &nbsp;·&nbsp; Serving: vLLM &nbsp;·&nbsp; Compute: LRZ H100 &nbsp;·&nbsp; 115-row gold set
-    </p>
     <p style="font-size:.62em; color:#8dbfa0; margin-top:1.0em;">Lanre Oriowo &amp; Rudraksha Samdhani &nbsp;·&nbsp; 2026 &nbsp;<span style="opacity:.55;"></span></p>
   </div>
   <aside class="notes">
@@ -269,7 +274,7 @@
   <div class="pipe">
     <div class="box agent"><div class="t">Write / improve<br>prompt</div></div>
     <div class="arrow">→</div>
-    <div class="box"><div class="t">Run on all<br>115 rows</div><div class="s">Qwen3.5-9B via vLLM</div></div>
+    <div class="box"><div class="t">Run on all<br>115 rows</div><div class="s">Qwen3.5-9B on LRZ</div></div>
     <div class="arrow">→</div>
     <div class="box"><div class="t">Score &amp;<br>analyse errors</div><div class="s">confusion matrices</div></div>
     <div class="arrow" style="transform:scaleX(-1);">↻</div>
@@ -286,30 +291,19 @@
 
 <!-- 9. WHY #1 -->
 <section>
-  <div class="kicker">Design decisions: the "why"</div>
-  <h2 class="bar">Why these tools? (1/2)</h2>
+  <div class="kicker">Design decisions</div>
+  <h2 class="bar">Why these tools?</h2>
   <table>
     <tr><th>Choice</th><th>Why we made it</th></tr>
-    <tr><td><strong>Qwen3.5-9B</strong><br>(open model)</td><td>Strong open model that fits on <strong>one GPU</strong>. Runs locally on LRZ → <em>reproducible, free, and no survey data leaves the cluster</em> (privacy). No vendor lock-in.</td></tr>
     <tr><td><strong>Prompting<br>before fine-tuning</strong></td><td>Only 115 examples, <strong>too few to train reliably</strong>. Prompting is cheap, fast to iterate, and <em>interpretable</em>: we can read exactly why a choice was made. It sets an honest baseline before any training.</td></tr>
-    <tr><td><strong>vLLM serving</strong></td><td>Fast inference with an <strong>OpenAI-compatible API</strong> → our pipeline is a simple Python client. Easy to swap models later.</td></tr>
-  </table>
-  <aside class="notes">Anticipating the obvious questions. Why not GPT-4 or Claude? Reproducibility, cost, privacy, and the requirement to run on the university cluster. Why not fine-tune immediately? We don't have the data yet, and we want to know how far prompting alone gets us.</aside>
-</section>
-
-<!-- 10. WHY #2 -->
-<section>
-  <div class="kicker">Design decisions: the "why"</div>
-  <h2 class="bar">Why these tools? (2/2)</h2>
-  <table>
-    <tr><th>Choice</th><th>Why we made it</th></tr>
     <tr><td><strong>Structured JSON output</strong><br>(guided decoding + concept <span class="codey">enum</span>)</td><td>Guarantees machine-parseable output and <strong>forces the model to pick a valid concept</strong> from the 22: it cannot invent categories.</td></tr>
     <tr><td><strong><span class="codey">enable_thinking = false</span></strong></td><td>Qwen3.5 otherwise emits long reasoning prose that <strong>breaks JSON parsing</strong>. Disabling it gave reliable structured answers.</td></tr>
     <tr><td><strong>Isolated evaluation</strong></td><td>Score each agent <em>independently</em>: the Question Developer is fed the <strong>gold assertion</strong>, not the model's own. Errors don't compound, so we can localise failures.</td></tr>
     <tr><td><strong>Normalization layer</strong></td><td>Fair scoring: unify <span class="codey">Behavior=Behaviour</span>, extract the structure code from messy text, <em>without ever editing the gold file</em>.</td></tr>
   </table>
-  <aside class="notes">These four engineering decisions are what made the evaluation trustworthy. Isolated evaluation especially: if we chained the agents, a bad assertion would unfairly tank the question score and we couldn't tell which stage failed.</aside>
+  <aside class="notes">Anticipating the obvious questions. Why not GPT-4 or Claude? Reproducibility, cost, privacy, and the requirement to run on the university cluster. Why not fine-tune immediately? We don't have the data yet, and we want to know how far prompting alone gets us.</aside>
 </section>
+
 
 <!-- 11. METRICS -->
 <section>
@@ -328,10 +322,10 @@
         <p>• <strong>Question format</strong> classified</p>
       </div>
     </div>
-    <div>
-      <div class="card ok"><h4>One thing to keep in mind</h4>
+    <div style="display:flex; align-items:center; justify-content:center; align-self:stretch;">
+      <div class="card ok"><h4>Note:</h4>
         <p style="color:var(--ink);font-size:.86em;"><strong>Exact string match understates quality.</strong> "How satisfied are you with this product?" vs "…with your product?" are both perfect, but don't match exactly.</p>
-        <p style="font-size:.82em;">→ <strong>Run 4</strong> adds an <em>LLM-as-judge</em> alignment score (1–5) that measures meaning, not strings (next section).</p>
+        <p style="font-size:.82em;">→ <strong>Run 4</strong> adds an <em>LLM-as-judge</em> alignment score (1–5) that measures meaning, not strings.</p>
       </div>
     </div>
   </div>
@@ -412,16 +406,16 @@
   <div class="kicker">Key Findings: the core insight</div>
   <h2 class="bar">Structure codes are the bottleneck</h2>
   <div class="cols">
-    <div class="col-40 center">
-      <img class="slide-fig" src="figures/fig06_concept_structure_gap.png" alt="Concept vs structure gap">
+    <div class="col-60 center">
+      <img class="slide-fig" src="figures/fig06_concept_structure_gap.png" alt="Concept vs structure gap" style="height:360px;">
+      <p class="fig-footer"><strong>Takeaway:</strong> Identifying <em>what</em> is measured is largely learnable by prompting; pinning the exact <em>grammar code</em> is the remaining hard problem.</p>
     </div>
-    <div class="col-60">
-      <ul>
+    <div class="col-40" style="align-self:center;">
+      <ul style="font-size:.74em;">
         <li>Points <strong>below the diagonal</strong> = concept right, but structure wrong.</li>
         <li>Whole concepts get the category right yet score <strong>0% on structure</strong>: <em>Expectations of future events, Action tendencies, Feelings, Procedures</em>.</li>
         <li>Structure codes are <strong>fine-grained and theory-laden</strong>: e.g. intention (<span class="codey">rFDy</span>) vs future event (<span class="codey">xFD</span>), distinctions even experts debate.</li>
       </ul>
-      <div class="card alt"><h4>Takeaway</h4><p style="color:var(--ink)">Identifying <em>what</em> is measured is largely learnable by prompting. Pinning the exact <em>grammar code</em> is the remaining hard problem.</p></div>
     </div>
   </div>
   <aside class="notes">This is the single most important finding. Concept ID responds well to prompting; structure assignment lags. The gap is concentrated in a few concepts where the model knows the category but picks an adjacent structure code.</aside>
@@ -491,15 +485,15 @@
   <h2 class="bar">Exact match was measuring the wrong thing</h2>
   <div class="cols">
     <div class="col-60 center">
-      <img class="slide-fig" src="figures/fig09_exact_match_vs_judge.png" alt="Exact match vs judge">
+      <img class="slide-fig" src="figures/fig09_exact_match_vs_judge.png" alt="Exact match vs judge" style="height:330px;">
+      <div class="card ok" style="margin-top:.4em; text-align:left;"><h4>Takeaway</h4><p style="color:var(--ink)">The low exact-match was a <em>metric artefact</em>, not bad questions. We report <strong>judge alignment</strong> for the question stage.</p></div>
     </div>
-    <div class="col-40">
+    <div class="col-40" style="align-self:center;">
       <ul style="font-size:.92em;">
         <li>Exact match: <strong>18%</strong>. Judge ≥ 4: <strong>99%</strong>.</li>
         <li><strong>94 / 94</strong> questions that did <em>not</em> match the gold string still scored ≥ 4 for meaning.</li>
         <li>Correlation between exact match and judge: <strong>r ≈ 0.04</strong>, essentially none.</li>
       </ul>
-      <div class="card ok"><h4>Takeaway</h4><p style="color:var(--ink)">The low exact-match was a <em>metric artefact</em>, not bad questions. We report <strong>judge alignment</strong> for the question stage.</p></div>
     </div>
   </div>
   <aside class="notes">This is the headline of Run 4. The 18% exact match looked alarming, but the judge shows 99% of questions are good. The two metrics don't correlate at all (r=0.04): they measure different things. Conclusion: for question quality, trust the judge, not string matching.</aside>
@@ -523,7 +517,7 @@
 <!-- 20. LIMITATIONS -->
 <section>
   <div class="kicker">Discussion</div>
-  <h2 class="bar">Limitations: being honest</h2>
+  <h2 class="bar">Limitations</h2>
   <div class="cols">
     <div>
       <div class="card alt"><h4>Data</h4><p>115 rows; many concepts at <strong>n = 3</strong> → noisy per-concept estimates. One annotator's scheme.</p></div>
@@ -563,11 +557,10 @@
 <!-- 23. THANK YOU -->
 <section data-background-color="#00692c">
   <div class="center" style="color:#eafaf0; margin-top:1em;">
-    <h1 style="color:#fff;">Thank you</h1>
-    <p style="color:#d4ecdd;">Questions &amp; discussion welcome.</p>
+    <h1 style="color:#fff;">Thank you!</h1>
+    <p style="color:#d4ecdd;">Questions &amp; Discussion.</p>
     <p style="font-size:.6em; color:#8dbfa0; margin-top:1.5em;">
-      Survey Item Generator &nbsp;·&nbsp; Qwen3.5-9B / vLLM / LRZ &nbsp;·&nbsp; 115-row gold set<br>
-      Code &amp; report: <span class="codey" style="background:#04562a;color:#bff0d2;">nlp-css-seminar</span> &nbsp;·&nbsp; see <span class="codey" style="background:#04562a;color:#bff0d2;">docs/BASELINE_REPORT.md</span>
+      Code: <a href="https://github.com/richienod0llar/nlp-css-seminar" target="_blank" rel="noopener noreferrer" style="color:#bff0d2; text-decoration:none;"><span class="codey" style="background:#04562a;color:#bff0d2;">nlp-css-seminar</span></a>
     </p>
   </div>
   <aside class="notes">Thanks. Backup appendix slides (confusion heatmaps) follow if needed for deep-dive questions.</aside>
