@@ -159,10 +159,12 @@
     </div>
   </div>
   <aside class="notes">Quick roadmap. Everything is built around one feedback loop: prompt the model, score it on the gold set, learn from the errors, improve the prompt.</aside>
+</section>
 
-  <!-- 2b. WHERE WE FIT -->
+<!-- 2b. WHERE WE FIT -->
+<section>
   <div class="kicker">Context</div>
-  <h6 class="bar">Our agents inside the full pipeline</h6>
+  <h2 class="bar">Our agents inside the full pipeline</h2>
   <div class="pipe" style="flex-wrap:wrap; gap:.4em;">
     <div class="box" style="opacity:.45;"><div class="t">Concept Mapper</div><div class="s">Classifies domain</div></div>
     <div class="arrow" style="opacity:.45;">→</div>
@@ -174,6 +176,11 @@
     <div class="arrow" style="opacity:.45;">→</div>
     <div class="box" style="opacity:.45;"><div class="t">Item Reviser</div><div class="s">Final output</div></div>
   </div>
+  <div class="cols" style="margin-top:.5em;">
+    <div class="card ok"><h4>Our contribution</h4><p style="color:var(--ink);">We design, implement, and evaluate the <strong>Assertion Developer</strong> and <strong>Question Developer</strong> agents — the core measurement-decision layer of the pipeline.</p></div>
+    <div class="card"><h4>Evaluation strategy</h4><p>Each agent is scored <strong>independently</strong>: the Question Developer always receives the <em>gold assertion</em>, so errors don't compound across stages.</p></div>
+  </div>
+  <aside class="notes">Before diving into the method, here's where our two agents sit in the full system. The greyed-out boxes are other teams' work. We own the two green boxes: the assertion stage (the hard classification step) and the question stage (the writing step).</aside>
 </section>
 
 <!-- 3. THE PROBLEM -->
@@ -419,22 +426,6 @@
   <aside class="notes">Best run. Note the contrast: 100% coverage but 18% exact match. The qualitative examples later show the questions are good; exact match just can't see that.</aside>
 </section>
 
-<!-- 15. PER-CONCEPT -->
-<section>
-  <div class="kicker">Key Findings: by category</div>
-  <h2 class="bar">Some concepts are easy, some are hard</h2>
-  <div class="cols">
-    <div class="col-60 center">
-      <img class="slide-fig" src="figures/fig03_per_concept_accuracy.png" alt="Per-concept accuracy">
-    </div>
-    <div class="col-40">
-      <div class="card ok"><h4>Near-perfect</h4><p style="color:var(--ink)">Evaluation, Demographics, Preference, Importance, Knowledge, Norms, Rights</p></div>
-      <div class="card"><h4>The pattern</h4><p>Frequent, well-defined concepts are easy; <strong>rare, abstract ones</strong> (Policies, Place, Values, Feelings) are hard.</p></div>
-    </div>
-  </div>
-  <aside class="notes">Clear pattern: the model nails common, concrete concepts. It struggles with rare or abstract ones: partly genuine difficulty, partly tiny n=3 samples where each error costs 33 points.</aside>
-</section>
-
 <!-- 16. STRUCTURE BOTTLENECK -->
 <section>
   <div class="kicker">Key Findings: the core insight</div>
@@ -503,14 +494,14 @@
     </div>
     <div class="col-40">
       <div class="stats" style="flex-direction:column; gap:.4em;">
-        <div class="stat"><div class="num">4.51</div><div class="lbl">Indicator → assertion (/5)</div></div>
-        <div class="stat"><div class="num g">4.99</div><div class="lbl">Assertion → question (/5)</div></div>
+        <div class="stat"><div class="num">84%</div><div class="lbl">Indicator → assertion = 5</div></div>
+        <div class="stat"><div class="num g">99%</div><div class="lbl">Assertion → question = 5</div></div>
         <div class="stat"><div class="num o">99%</div><div class="lbl">Rows scored ≥ 4</div></div>
       </div>
       <p class="small" style="margin-top:.5em;">A judge model rates how faithfully each output captures its input. Same outputs as Run 3: <strong>this adds meaning-based scoring</strong> on top of the exact-match numbers.</p>
     </div>
   </div>
-  <aside class="notes">Run 4 doesn't change the predictions: it re-scores Run 3's exact outputs with the model acting as a judge, rating semantic faithfulness 1 to 5. Assertions score 4.51 on average; questions an almost-perfect 4.99. Nearly every item is rated 4 or 5.</aside>
+  <aside class="notes">Run 4 doesn't change the predictions: it re-scores Run 3's exact outputs with the model acting as a judge, rating semantic faithfulness 1 to 5. Assertions score 90% on average; questions an almost-perfect 99%. Nearly every item is rated 4 or 5.</aside>
 </section>
 
 <!-- 18c. RUN 4: EXACT MATCH VS JUDGE -->
@@ -609,6 +600,22 @@
     <div class="center"><img class="slide-fig" src="figures/fig05_structure_confusion_heatmap.png" alt="Structure confusion heatmap"><figcaption>Semantic structure codes</figcaption></div>
   </div>
   <aside class="notes">Backup detail for deep-dive questions on specific confusions.</aside>
+</section>
+
+<!-- APPENDIX: PER-CONCEPT -->
+<section>
+  <div class="kicker">Key Findings: by category</div>
+  <h2 class="bar">Some concepts are easy, some are hard</h2>
+  <div class="cols">
+    <div class="col-60 center">
+      <img class="slide-fig" src="figures/fig03_per_concept_accuracy.png" alt="Per-concept accuracy">
+    </div>
+    <div class="col-40">
+      <div class="card ok"><h4>Near-perfect</h4><p style="color:var(--ink)">Evaluation, Demographics, Preference, Importance, Knowledge, Norms, Rights</p></div>
+      <div class="card"><h4>The pattern</h4><p>Frequent, well-defined concepts are easy; <strong>rare, abstract ones</strong> (Policies, Place, Values, Feelings) are hard.</p></div>
+    </div>
+  </div>
+  <aside class="notes">Clear pattern: the model nails common, concrete concepts. It struggles with rare or abstract ones: partly genuine difficulty, partly tiny n=3 samples where each error costs 33 points.</aside>
 </section>
 
 <!-- APPENDIX: JUDGE DETAIL -->
