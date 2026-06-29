@@ -142,7 +142,8 @@
   </aside>
 </section>
 
-<!-- 2. AGENDA -->
+
+<!-- 2a. AGENDA -->
 <section>
   <div class="kicker">Agenda</div>
   <div class="cols">
@@ -158,6 +159,28 @@
     </div>
   </div>
   <aside class="notes">Quick roadmap. Everything is built around one feedback loop: prompt the model, score it on the gold set, learn from the errors, improve the prompt.</aside>
+</section>
+
+<!-- 2b. WHERE WE FIT -->
+<section>
+  <div class="kicker">Context</div>
+  <h2 class="bar">Our agents inside the full pipeline</h2>
+  <div class="pipe" style="flex-wrap:wrap; gap:.4em;">
+    <div class="box" style="opacity:.45;"><div class="t">Concept Mapper</div><div class="s">Classifies domain</div></div>
+    <div class="arrow" style="opacity:.45;">→</div>
+    <div class="box agent"><div class="t">① Assertion Developer</div><div class="s">concept · structure · assertion</div></div>
+    <div class="arrow">→</div>
+    <div class="box agent2"><div class="t">② Question Developer</div><div class="s">question · options · format</div></div>
+    <div class="arrow" style="opacity:.45;">→</div>
+    <div class="box" style="opacity:.45;"><div class="t">Error Checker</div><div class="s">Wording diagnostics</div></div>
+    <div class="arrow" style="opacity:.45;">→</div>
+    <div class="box" style="opacity:.45;"><div class="t">Item Reviser</div><div class="s">Final output</div></div>
+  </div>
+  <div class="cols" style="margin-top:.5em;">
+    <div class="card ok"><h4>Our contribution</h4><p style="color:var(--ink);">We design, implement, and evaluate the <strong>Assertion Developer</strong> and <strong>Question Developer</strong> agents — the core measurement-decision layer of the pipeline.</p></div>
+    <div class="card"><h4>Evaluation strategy</h4><p>Each agent is scored <strong>independently</strong>: the Question Developer always receives the <em>gold assertion</em>, so errors don't compound across stages.</p></div>
+  </div>
+  <aside class="notes">Before diving into the method, here's where our two agents sit in the full system. The greyed-out boxes are other teams' work. We own the two green boxes: the assertion stage (the hard classification step) and the question stage (the writing step).</aside>
 </section>
 
 <!-- 3. THE PROBLEM -->
@@ -209,19 +232,27 @@
   <div class="pipe">
     <div class="box"><div class="t">"Overall satisfaction<br>with product"</div><div class="s">indicator</div></div>
     <div class="arrow">→</div>
-    <div class="box agent"><div class="t">Concept: Evaluation<br>Structure: xIe</div><div class="s">"I am satisfied with this product."</div></div>
+    <div class="box agent"><div class="t">Concept: <strong style="color:#aef0c8;">Evaluation</strong><br>Structure: <strong style="color:#aef0c8;">xIe</strong></div><div class="s">"I am satisfied with this product."</div></div>
     <div class="arrow">→</div>
-    <div class="box agent2"><div class="t">"How satisfied are you<br>with this product?"</div><div class="s">scale: Very dissatisfied → Very satisfied</div></div>
+    <div class="box agent2"><div class="t">"How satisfied are you<br>with this product?"</div><div class="s">Rating scale · Direct interrogative</div></div>
   </div>
-  <p style="margin-top:.5em;">This is exactly what our system must produce, and exactly what we score against the expert gold answer.</p>
-  <div class="card ok"><h4>Why the middle step matters</h4><p>The <em>assertion + tags</em> force the model to <strong>commit to a measurement decision</strong> before it writes pretty wording. That decision is where the difficulty, and most errors, live.</p></div>
-  <aside class="notes">A complete trace. The assertion stage is the "thinking": classify and template. The question stage is the "writing". We evaluate them separately.</aside>
+  <div class="cols" style="margin-top:.4em;">
+    <div class="card ok"><h4>Why the middle step matters</h4><p>The assertion forces the model to <strong>commit to a measurement decision</strong> before writing wording. That decision is where difficulty — and most errors — live.</p></div>
+    <div>
+      <div class="card alt"><h4>A near-miss: Repurchase intention</h4>
+        <p>Gold: <span class="codey">Action tendencies · rFDy</span></p>
+        <p>Model: <span class="codey">Action tendencies · rFDy</span> ✓ → <em>"How likely are you to purchase again?"</em></p>
+        <p style="font-size:.78em; color:var(--muted);">Both codes express future behavior — the model must distinguish <em>intention</em> (<span class="codey">rFDy</span>) from <em>forecast</em> (<span class="codey">xFDy</span>).</p>
+      </div>
+    </div>
+  </div>
+  <aside class="notes">Two examples side by side: a clean win and a near-miss. The near-miss on repurchase intention shows exactly why structure codes are hard: rFDy (intention) and xFDy (forecast) are one letter apart but theoretically distinct.</aside>
 </section>
 
 <!-- 6. TASK / PIPELINE -->
 <section>
   <div class="kicker">Task definition</div>
-  <h2 class="bar">Two agents, two sub-tasks</h2>
+  <h4 class="bar">Two agents, two sub-tasks</h4>
   <div class="pipe">
     <div class="box"><div class="t">input_indicator</div></div>
     <div class="arrow">→</div>
@@ -229,12 +260,22 @@
     <div class="arrow">→</div>
     <div class="box agent2"><div class="t">Question Developer</div><div class="s">→ question<br>→ answer_options<br>→ question_format</div></div>
   </div>
-  <div class="cols">
-    <div><div class="card"><h4>Assertion Developer</h4><p>The hard, theory-laden classification + templating step. Scored on <strong>concept</strong> and <strong>structure</strong> accuracy.</p></div></div>
-    <div><div class="card alt"><h4>Question Developer</h4><p>Turns an assertion into a respondent-facing question. Scored on <strong>coverage</strong> and wording match.</p></div></div>
+
+  <div class="cols" style="margin-top:.3em;">
+    <div class="card"><h6>Assertion Developer prompt rules</h6>
+      <p>• Pick exactly <strong>one</strong> of 22 concepts (enum-constrained)</p>
+      <p>• Choose only structure codes <em>allowed</em> for that concept</p>
+      <p>• Apply disambiguation table for confusable pairs</p>
+      <p>• Output strict JSON: <span class="codey">concept · structure_code · assertion</span></p>
+    </div>
+    <div class="card alt"><h6>Question Developer prompt rules</h6>
+      <p>• Convert assertion → direct interrogative question</p>
+      <p>• Subjective concepts → rating scale; objective → frequency / open-ended</p>
+      <p>• Options must be exhaustive and mutually exclusive</p>
+      <p>• Output strict JSON: <span class="codey">question · answer_options · question_format</span></p>
+    </div>
   </div>
-  <p class="small">Both implemented as the <span class="codey">same Qwen3.5-9B</span> behind two carefully written system prompts (the rulebook is injected from <span class="codey">concepts.yaml</span>).</p>
-  <aside class="notes">Two prompts, one model. The concept rulebook is injected programmatically into the prompt so we never hand-edit rules: change the YAML, the prompt updates.</aside>
+  <p class="small" style="margin-top:.3em;">Both run on <span class="codey">Qwen3.5-9B</span> with <span class="codey">enable_thinking=false</span>; the concept rulebook is injected from <span class="codey">concepts.yaml</span> so prompt and rules stay in sync.</p>
 </section>
 
 <!-- 7. DATA -->
@@ -385,22 +426,6 @@
   <aside class="notes">Best run. Note the contrast: 100% coverage but 18% exact match. The qualitative examples later show the questions are good; exact match just can't see that.</aside>
 </section>
 
-<!-- 15. PER-CONCEPT -->
-<section>
-  <div class="kicker">Key Findings: by category</div>
-  <h2 class="bar">Some concepts are easy, some are hard</h2>
-  <div class="cols">
-    <div class="col-60 center">
-      <img class="slide-fig" src="figures/fig03_per_concept_accuracy.png" alt="Per-concept accuracy">
-    </div>
-    <div class="col-40">
-      <div class="card ok"><h4>Near-perfect</h4><p style="color:var(--ink)">Evaluation, Demographics, Preference, Importance, Knowledge, Norms, Rights</p></div>
-      <div class="card"><h4>The pattern</h4><p>Frequent, well-defined concepts are easy; <strong>rare, abstract ones</strong> (Policies, Place, Values, Feelings) are hard.</p></div>
-    </div>
-  </div>
-  <aside class="notes">Clear pattern: the model nails common, concrete concepts. It struggles with rare or abstract ones: partly genuine difficulty, partly tiny n=3 samples where each error costs 33 points.</aside>
-</section>
-
 <!-- 16. STRUCTURE BOTTLENECK -->
 <section>
   <div class="kicker">Key Findings: the core insight</div>
@@ -469,14 +494,14 @@
     </div>
     <div class="col-40">
       <div class="stats" style="flex-direction:column; gap:.4em;">
-        <div class="stat"><div class="num">4.51</div><div class="lbl">Indicator → assertion (/5)</div></div>
-        <div class="stat"><div class="num g">4.99</div><div class="lbl">Assertion → question (/5)</div></div>
+        <div class="stat"><div class="num">84%</div><div class="lbl">Indicator → assertion = 5</div></div>
+        <div class="stat"><div class="num g">99%</div><div class="lbl">Assertion → question = 5</div></div>
         <div class="stat"><div class="num o">99%</div><div class="lbl">Rows scored ≥ 4</div></div>
       </div>
       <p class="small" style="margin-top:.5em;">A judge model rates how faithfully each output captures its input. Same outputs as Run 3: <strong>this adds meaning-based scoring</strong> on top of the exact-match numbers.</p>
     </div>
   </div>
-  <aside class="notes">Run 4 doesn't change the predictions: it re-scores Run 3's exact outputs with the model acting as a judge, rating semantic faithfulness 1 to 5. Assertions score 4.51 on average; questions an almost-perfect 4.99. Nearly every item is rated 4 or 5.</aside>
+  <aside class="notes">Run 4 doesn't change the predictions: it re-scores Run 3's exact outputs with the model acting as a judge, rating semantic faithfulness 1 to 5. Assertions score 90% on average; questions an almost-perfect 99%. Nearly every item is rated 4 or 5.</aside>
 </section>
 
 <!-- 18c. RUN 4: EXACT MATCH VS JUDGE -->
@@ -577,6 +602,22 @@
   <aside class="notes">Backup detail for deep-dive questions on specific confusions.</aside>
 </section>
 
+<!-- APPENDIX: PER-CONCEPT -->
+<section>
+  <div class="kicker">Key Findings: by category</div>
+  <h2 class="bar">Some concepts are easy, some are hard</h2>
+  <div class="cols">
+    <div class="col-60 center">
+      <img class="slide-fig" src="figures/fig03_per_concept_accuracy.png" alt="Per-concept accuracy">
+    </div>
+    <div class="col-40">
+      <div class="card ok"><h4>Near-perfect</h4><p style="color:var(--ink)">Evaluation, Demographics, Preference, Importance, Knowledge, Norms, Rights</p></div>
+      <div class="card"><h4>The pattern</h4><p>Frequent, well-defined concepts are easy; <strong>rare, abstract ones</strong> (Policies, Place, Values, Feelings) are hard.</p></div>
+    </div>
+  </div>
+  <aside class="notes">Clear pattern: the model nails common, concrete concepts. It struggles with rare or abstract ones: partly genuine difficulty, partly tiny n=3 samples where each error costs 33 points.</aside>
+</section>
+
 <!-- APPENDIX: JUDGE DETAIL -->
 <section>
   <div class="kicker">Appendix: backup (Run 4 judge)</div>
@@ -586,6 +627,80 @@
     <div class="center"><img class="slide-fig" src="figures/fig11_mean_ia_by_concept.png" alt="Mean alignment by concept"><figcaption>Mean indicator→assertion score by gold concept</figcaption></div>
   </div>
   <aside class="notes">Left: assertions read as faithful even when the taxonomy label is wrong (4.21 vs 4.61). Right: alignment is high across nearly all concepts; Causal relationship and Feelings are the weakest.</aside>
+</section>
+
+<!-- APPENDIX: DATA SAMPLES -->
+<section>
+  <div class="kicker">Appendix: Gold Dataset Samples</div>
+  <h2 class="bar">Examples of ground-truth annotations (n=115)</h2>
+  <div style="margin-top:0.4em;">
+    <table style="font-size: 0.55em; line-height: 1.2;">
+      <thead>
+        <tr>
+          <th>Indicator</th>
+          <th>Concept</th>
+          <th>Structure</th>
+          <th>Assertion</th>
+          <th>Question</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Overall satisfaction</td>
+          <td>Evaluation</td>
+          <td><span class="codey">xIe</span></td>
+          <td>I am satisfied with this product.</td>
+          <td>How satisfied are you with your product?</td>
+        </tr>
+        <tr>
+          <td>Expectations met</td>
+          <td>Evaluative belief</td>
+          <td><span class="codey">xPyc</span></td>
+          <td>This product met my expectations.</td>
+          <td>How well did this product meet your expectations?</td>
+        </tr>
+        <tr>
+          <td>Desired improvement</td>
+          <td>Preference</td>
+          <td><span class="codey">xPRy</span></td>
+          <td>I would prefer a change in a particular aspect of my experience.</td>
+          <td>What one thing would most improve your experience?</td>
+        </tr>
+        <tr>
+          <td>Repurchase intention</td>
+          <td>Action tendencies</td>
+          <td><span class="codey">rFDy</span></td>
+          <td>I intend to purchase from this organization again.</td>
+          <td>Likelihood of purchasing from you again?</td>
+        </tr>
+        <tr>
+          <td>Emergency contact</td>
+          <td>Demographics</td>
+          <td><span class="codey">xId</span></td>
+          <td>My emergency contact is [person].</td>
+          <td>Who is your emergency contact?</td>
+        </tr>
+        <tr>
+          <td>Exercise frequency</td>
+          <td>Behaviour</td>
+          <td><span class="codey">rDy</span></td>
+          <td>I engage in physical exercise regularly.</td>
+          <td>How often do you engage in physical exercise?</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="cols" style="margin-top:0.6em;">
+    <div class="card" style="flex:1;">
+      <p style="font-size:0.75em;"><strong>Subjective items</strong> focus on internal states/evaluations and typically map to rating scales.</p>
+    </div>
+    <div class="card alt" style="flex:1;">
+      <p style="font-size:0.75em;"><strong>Objective items</strong> focus on facts/behaviors and map to frequency or open-ended formats.</p>
+    </div>
+  </div>
+  <aside class="notes">
+    In case of questions about data quality: each row in our 115-item set was manually prepared to cover all 22 concepts and various domain contexts. This shows the exact "bridge" the model must build from a few words to a complete survey instrument.
+  </aside>
 </section>
 
 <!-- 22. QUICK Q&A -->
