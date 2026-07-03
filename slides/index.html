@@ -524,6 +524,31 @@
   <aside class="notes">This is the headline of Run 4. The 18% exact match looked alarming, but the judge shows 99% of questions are good. The two metrics don't correlate at all (r=0.04): they measure different things. Conclusion: for question quality, trust the judge, not string matching.</aside>
 </section>
 
+<!-- 18d. RUN 5: EXTERNAL JUDGE -->
+<section>
+  <div class="kicker">Run 5: external validation</div>
+  <h2 class="bar">Self-grade bias confirmed; conclusions hold</h2>
+  <div class="cols">
+    <div class="col-55 center">
+      <img class="slide-fig" src="figures/fig12_self_vs_external_judge.png" alt="Self vs external judge">
+    </div>
+    <div class="col-45">
+      <table class="small" style="font-size:.78em;">
+        <tr><th>Metric</th><th>Self (9B)</th><th>Ext (72B)</th></tr>
+        <tr><td>Mean IA</td><td>4.51</td><td><strong>4.09</strong></td></tr>
+        <tr><td>Mean AQ</td><td>4.99</td><td><strong>4.56</strong></td></tr>
+        <tr><td>AQ ≥ 4</td><td>100%</td><td><strong>100%</strong></td></tr>
+      </table>
+      <ul class="small" style="margin-top:.5em;">
+        <li>Self-judge was <strong>~0.43 pts too lenient</strong> on both stages.</li>
+        <li>Question quality still <strong>4.56/5</strong>; all 94 non-exact questions still ≥ 4.</li>
+        <li>72B penalises demographic assertions with awkward first-person phrasing.</li>
+      </ul>
+    </div>
+  </div>
+  <aside class="notes">Run 5 re-scored the same 115 predictions with Qwen2.5-72B on 2 GPUs. Self-grade bias was real: means drop from 4.51/4.99 to 4.09/4.56. But the core story survives: questions are semantically strong even when strings differ. Assertions are good but not perfect; demographics phrasing is a new failure mode.</aside>
+</section>
+
 <!-- 19. DISCUSSION -->
 <section>
   <div class="kicker">Discussion</div>
@@ -532,9 +557,9 @@
     <li>An <strong>off-the-shelf 9B model</strong>, with careful prompting and <em>zero training</em>, reaches <strong>~76% concept / ~63% structure</strong> on a 22-way expert taxonomy: a strong baseline.</li>
     <li><strong>Concept identification</strong> is largely solvable by prompting + good examples + output constraints.</li>
     <li><strong>Structure assignment</strong> is the genuine frontier: fine distinctions, rare codes, theory-dependent.</li>
-    <li><strong>Question generation</strong> is essentially solved: the judge scores it <strong>4.99/5</strong>; the 18% exact match was a metric artefact, not a quality problem.</li>
-    <li>Even when the <em>taxonomy label</em> is wrong, assertions still read as faithful paraphrases (judge 4.21 vs 4.61 when correct); taxonomy errors ≠ broken meaning.</li>
-    <li class="small"><strong>One catch:</strong> the judge is the <em>same model</em> (self-grading) → scores may be optimistic; an external 72B judge is the honest next check.</li>
+    <li><strong>Question generation</strong> is essentially solved: external judge scores it <strong>4.56/5</strong> (100% ≥ 4); the 18% exact match was a metric artefact, not a quality problem.</li>
+    <li>Even when the <em>taxonomy label</em> is wrong, assertions still read as faithful paraphrases (ext IA 3.89 vs 4.15 when correct); taxonomy errors ≠ broken meaning.</li>
+    <li class="small"><strong>Self-grade caveat addressed:</strong> Run 5 external 72B judge confirms 9B was lenient (−0.43), but headline conclusions unchanged.</li>
   </ul>
   <aside class="notes">The interpretation in a few bullets. The split between "concept is easy, structure is hard" is the main scientific takeaway and it directly shapes the next steps.</aside>
 </section>
@@ -546,7 +571,7 @@
   <div class="cols">
     <div>
       <div class="card alt"><h4>Data</h4><p>115 rows; many concepts at <strong>n = 3</strong> → noisy per-concept estimates. One annotator's scheme.</p></div>
-      <div class="card alt"><h4>Metric</h4><p>Exact-match understates question quality; judge scores exist but are <strong>self-graded</strong>, with no human or external-judge check yet.</p></div>
+      <div class="card alt"><h4>Metric</h4><p>Exact-match understates question quality. External 72B judge validates semantic scores (<strong>4.56/5 AQ</strong>); no human spot-check yet.</p></div>
     </div>
     <div>
       <div class="card alt"><h4>Model &amp; runs</h4><p>Single model, greedy decoding (temp 0), single run → no variance estimates.</p></div>
@@ -564,14 +589,14 @@
     <ul style="color:#e6f4ec;">
       <li>A prompt-driven pipeline <strong style="color:#aef0c8;">turns raw indicators into theory-grounded survey items</strong> end-to-end.</li>
       <li>Iterative, error-driven prompting added <strong style="color:#aef0c8;">+18pp concept accuracy</strong> with no training.</li>
-      <li><strong style="color:#aef0c8;">Structure codes are the frontier</strong>; the LLM-as-judge confirms questions are excellent (<strong style="color:#aef0c8;">4.99/5</strong>) despite low exact match.</li>
+      <li><strong style="color:#aef0c8;">Structure codes are the frontier</strong>; external judge confirms questions are excellent (<strong style="color:#aef0c8;">4.56/5</strong>) despite low exact match.</li>
     </ul>
     <hr style="border:none;border-top:1px solid #2f7d4f; margin:.7em 0;">
     <h3 style="color:#aef0c8;">Next steps</h3>
     <ul style="color:#d4ecdd; font-size:.82em;">
-      <li>External judge (Qwen2.5-72B) to remove self-grade bias</li>
-      <li>Structure-focused few-shot</li>
+      <li>Structure-focused few-shot (`xFD`, `xFy`)</li>
       <li>LoRA fine-tuning on the assertion stage</li>
+      <li>Human spot-check (~20 rows) vs 72B judge</li>
       <li>Expand &amp; balance the gold set</li>
     </ul>
   </div>
@@ -713,7 +738,7 @@
     <tr><td>Why 9B, not 72B?</td><td>Fits one GPU → fast iteration. The 72B is earmarked for LLM-as-judge to avoid self-grading bias.</td></tr>
     <tr><td>Why isolated evaluation?</td><td>So one stage's errors don't contaminate the other, letting us localise the bottleneck (the assertion stage).</td></tr>
     <tr><td>Is 76% good?</td><td>For a 22-way expert taxonomy with <strong>zero training</strong>, yes, and it was still climbing each iteration.</td></tr>
-    <tr><td>Isn't the judge the model grading itself?</td><td>Yes, and scores may be optimistic because of that. We flag it and plan an <strong>external 72B judge</strong>. But judge vs exact-match correlate at <em>r≈0.04</em>, confirming exact match misses genuine quality.</td></tr>
+    <tr><td>Isn't the judge the model grading itself?</td><td>Run 4 used self-judge (9B); Run 5 re-scored with <strong>Qwen2.5-72B</strong>. Means dropped 4.51→4.09 (IA) and 4.99→4.56 (AQ), confirming leniency. Core conclusions unchanged: 100% AQ ≥ 4 externally.</td></tr>
   </table>
   <aside class="notes">A backup slide to field the predictable questions confidently. Use it if asked, or jump straight to thanks.</aside>
 </section>

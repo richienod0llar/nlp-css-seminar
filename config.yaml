@@ -8,10 +8,11 @@ llm:
   mock: false
 
 judge:
-  model: "/dss/dssmcmlfs01/pn25ju/pn25ju-dss-0000/models/Qwen3.5-9B"
-  # base_url: defaults to llm.base_url
+  model: "/dss/dssmcmlfs01/pn25ju/pn25ju-dss-0000/models/Qwen2.5-72B-Instruct"
+  base_url: "http://localhost:8001/v1"  # external judge (start_vllm_judge.sh, 2 GPUs)
   max_tokens: 256
   temperature: 0.0
+  enable_thinking: false
 
 data:
   gold_set: "data/gold_set.xlsx"
@@ -23,4 +24,4 @@ output:
 eval:
   max_rows: null  # null = all 115 rows; set e.g. 5 for a quick test
   output_dir: "outputs/"
-  run_judge: true  # true = LLM-as-judge scores (2 extra calls per row)
+  run_judge: false  # full eval judge; prefer scripts/run_judge_only.py for external 72B

@@ -1,7 +1,7 @@
 ---
 
 name: Survey Item Generator
-overview: "Phase 1b complete (2026-06-25): Run 4 judge eval — 75.7% concept, 62.6% structure, 4.99/5 question alignment. Next: xFD structure pass, external judge or LoRA."
+overview: "Phase 1c complete (2026-07-03): Run 5 external judge — 75.7% concept, 62.6% structure, 4.56/5 question alignment (72B). Next: xFD structure pass, LoRA."
 todos:
 
 - id: github-auth-clone
@@ -40,8 +40,11 @@ status: completed
 - id: metrics
 content: "metrics.py: exact-match, per-concept/structure breakdown, confusion matrix export, question-format distribution."
 status: completed
+- id: external-judge
+content: "Run 5 external judge (Qwen2.5-72B): re-score Run 4 predictions via run_judge_only.py. Mean IA 4.09, mean AQ 4.56."
+status: completed
 - id: judge
-content: "judge.py implemented; Run 4 complete (20260625_160020): mean IA 4.51, mean AQ 4.99. Optional: external judge model."
+content: "judge.py + run_judge_only.py; Run 4 self-judge (4.51 IA, 4.99 AQ); Run 5 external 72B (4.09 IA, 4.56 AQ)."
 status: completed
 - id: eval-runner
 content: "run_eval.py: isolated mode over gold set, CSV + JSON to outputs/. Full 115-row baseline run complete (2026-06-20)."
@@ -63,6 +66,27 @@ isProject: false
 ---
 
 ---
+
+---
+
+---
+
+## Progress Update (2026-07-03, Run 5 external judge)
+
+**Run 5 complete** (`scripts/run_judge_only.py`, timestamp `20260703_171851`). Re-scores Run 4 predictions with **Qwen2.5-72B-Instruct** (2× H100, no pipeline rerun).
+
+| Metric | Self (9B, Run 4) | External (72B, Run 5) |
+|--------|------------------|------------------------|
+| Mean indicator→assertion | 4.51 | **4.09** |
+| Mean assertion→question | 4.99 | **4.56** |
+| AQ score ≥ 4 | 100% | **100%** |
+| Non-exact Q with ext AQ ≥ 4 | 94/94 | **94/94** |
+
+Self-grade bias confirmed (−0.43 on both metrics), but question-quality conclusion holds. Demographics assertions penalized by external judge for first-person phrasing.
+
+Report: [docs/BASELINE_REPORT.md](BASELINE_REPORT.md). Figures: `fig12`–`fig14`.
+
+**Next:** structure pass for `xFD`/`xFy`; LoRA on assertion stage.
 
 ---
 

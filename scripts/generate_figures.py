@@ -489,6 +489,101 @@ def fig10_ia_by_concept_correctness(report_path: Path, out_dir: Path) -> None:
     _save(fig, out_dir, "fig10_ia_by_concept_correctness")
 
 
+def fig12_self_vs_external_judge(ext_report_path: Path, out_dir: Path) -> None:
+    """Compare self-judge (9B) vs external judge (72B) mean alignment scores."""
+    df = pd.read_csv(ext_report_path)
+    required = {
+        "indicator_assertion_score",
+        "ext_indicator_assertion_score",
+        "assertion_question_score",
+        "ext_assertion_question_score",
+    }
+    if not required.issubset(df.columns):
+        return
+    metrics = [
+        ("Indicator → assertion", "indicator_assertion_score", "ext_indicator_assertion_score"),
+        ("Assertion → question", "assertion_question_score", "ext_assertion_question_score"),
+    ]
+    self_means = [df[self_col].mean() for _, self_col, _ in metrics]
+    ext_means = [df[ext_col].mean() for _, _, ext_col in metrics]
+    labels = [m[0] for m in metrics]
+    x = np.arange(len(labels))
+    width = 0.34
+    fig, ax = plt.subplots(figsize=(5.2, 3.6))
+    bars_self = ax.bar(x - width / 2, self_means, width, label="Self (Qwen3.5-9B)", color=C_NEUTRAL)
+    bars_ext = ax.bar(x + width / 2, ext_means, width, label="External (Qwen2.5-72B)", color=C_CONCEPT)
+    ax.set_ylabel("Mean judge score (1–5)")
+    ax.set_title("Self-judge vs external judge (Run 5)")
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels)
+    ax.set_ylim(3.5, 5.15)
+    ax.axhline(4, color="#cccccc", linestyle="--", linewidth=0.8)
+    ax.legend(frameon=False, loc="lower right")
+    for bars in (bars_self, bars_ext):
+        for bar in bars:
+            ax.text(
+                bar.get_x() + bar.get_width() / 2,
+                bar.get_height() + 0.03,
+                f"{bar.get_height():.2f}",
+                ha="center",
+                fontsize=8,
+            )
+    _save(fig, out_dir, "fig12_self_vs_external_judge", tight=False)
+
+
+def fig13_ext_judge_distributions(ext_report_path: Path, out_dir: Path) -> None:
+    """Histogram of external (72B) judge alignment scores."""
+    df = pd.read_csv(ext_report_path)
+    if "ext_indicator_assertion_score" not in df.columns:
+        return
+    fig, axes = plt.subplots(1, 2, figsize=(6.5, 3.2), sharey=True)
+    for ax, col, title, color in [
+        (axes[0], "ext_indicator_assertion_score", "Indicator → assertion (72B)", C_CONCEPT),
+        (axes[1], "ext_assertion_question_score", "Assertion → question (72B)", C_QUESTION),
+    ]:
+        counts = df[col].dropna().astype(int).value_counts().sort_index()
+        scores = list(range(1, 6))
+        heights = [counts.get(s, 0) for s in scores]
+        bars = ax.bar(scores, heights, color=color, edgecolor="white", linewidth=0.5)
+        mean = df[col].mean()
+        ax.axvline(mean, color="#333333", linestyle="--", linewidth=1, label=f"Mean={mean:.2f}")
+        for bar, h in zip(bars, heights):
+            if h:
+                ax.text(bar.get_x() + bar.get_width() / 2, h + 1, str(h), ha="center", fontsize=7)
+        ax.set_xlabel("Judge score")
+        ax.set_title(title)
+        ax.set_xticks(scores)
+        ax.set_xlim(0.5, 5.5)
+        ax.legend(loc="upper left", frameon=False, fontsize=7)
+    axes[0].set_ylabel("Number of rows (n=115)")
+    fig.suptitle("External judge (Qwen2.5-72B) score distributions", fontweight="bold", y=1.02)
+    fig.tight_layout()
+    _save(fig, out_dir, "fig13_ext_judge_distributions")
+
+
+def fig14_exact_match_vs_ext_judge(ext_report_path: Path, out_dir: Path) -> None:
+    """Exact match vs external judge for question quality."""
+    df = pd.read_csv(ext_report_path)
+    if "ext_assertion_question_score" not in df.columns:
+        return
+    exact_pct = df["question_exact_match"].mean() * 100
+    judge_ge4_pct = (df["ext_assertion_question_score"] >= 4).mean() * 100
+    mean_aq = df["ext_assertion_question_score"].mean()
+    labels = ["Exact string\nmatch", "Ext. judge\n≥ 4", "Mean ext.\njudge (/5)"]
+    values = [exact_pct, judge_ge4_pct, mean_aq * 20]
+    display = [f"{exact_pct:.1f}%", f"{judge_ge4_pct:.1f}%", f"{mean_aq:.2f}"]
+    colors = [C_NEUTRAL, C_QUESTION, C_BOTH]
+    fig, ax = plt.subplots(figsize=(5.0, 3.8))
+    fig.subplots_adjust(left=0.13, right=0.97, top=0.88, bottom=0.13)
+    bars = ax.bar(labels, values, color=colors, edgecolor="white", linewidth=0.5, width=0.62)
+    ax.set_ylabel("Rate (%)  ·  mean score ×20")
+    ax.set_title("Question quality: exact match vs external judge (72B)")
+    ax.set_ylim(0, 112)
+    for bar, disp, val in zip(bars, display, values):
+        ax.text(bar.get_x() + bar.get_width() / 2, val + 2.5, disp, ha="center", fontsize=9)
+    _save(fig, out_dir, "fig14_exact_match_vs_ext_judge", tight=False)
+
+
 def fig11_mean_ia_by_concept(report_path: Path, out_dir: Path) -> None:
     """Mean indicator-assertion judge score by gold concept."""
     df = pd.read_csv(report_path)
@@ -532,8 +627,11 @@ Generated by `python scripts/generate_figures.py`. Use **PDF** versions in manus
 | `fig09_exact_match_vs_judge` | Discussion | Why exact string match (18%) understates question quality (99% judge ≥4). |
 | `fig10_ia_by_concept_correctness` | Discussion | Judge scores when concept label is correct vs incorrect. |
 | `fig11_mean_ia_by_concept` | Appendix | Mean assertion alignment score by gold basic concept. |
+| `fig12_self_vs_external_judge` | Results (Run 5) | Mean self-judge (9B) vs external judge (72B) scores. |
+| `fig13_ext_judge_distributions` | Results (Run 5) | External judge score histograms for IA and AQ. |
+| `fig14_exact_match_vs_ext_judge` | Discussion (Run 5) | Exact match vs external judge on question quality. |
 
-Pass `--run-id 20260625_160020` for judge figures (Run 4).
+Pass `--run-id 20260625_160020` for judge figures (Run 4). Pass `--ext-judge-report` for Run 5 external judge figures.
 
 ## Regenerating
 
@@ -555,6 +653,12 @@ def main() -> None:
         "--run-id",
         default="20260625_160020",
         help="Run ID for detailed + judge figures (Run 4 default)",
+    )
+    parser.add_argument(
+        "--ext-judge-report",
+        type=Path,
+        default=ROOT / "docs" / "baseline" / "eval_report_ext_judge_20260703_171851.csv",
+        help="Run 5 external judge report CSV (self + ext columns)",
     )
     args = parser.parse_args()
 
@@ -596,6 +700,10 @@ def main() -> None:
         fig09_exact_match_vs_judge(run_report, args.out_dir)
         fig10_ia_by_concept_correctness(run_report, args.out_dir)
         fig11_mean_ia_by_concept(run_report, args.out_dir)
+    if args.ext_judge_report.exists():
+        fig12_self_vs_external_judge(args.ext_judge_report, args.out_dir)
+        fig13_ext_judge_distributions(args.ext_judge_report, args.out_dir)
+        fig14_exact_match_vs_ext_judge(args.ext_judge_report, args.out_dir)
     write_figures_readme(args.out_dir)
     print("Done. See docs/figures/FIGURES.md for caption guidance.")
 
