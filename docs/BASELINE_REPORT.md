@@ -5,7 +5,7 @@
 **Gold set:** 115 rows (`data/gold_set.xlsx`)  
 **Config:** `mock: false`, `enable_thinking: false`, `temperature: 0.0`, `max_tokens: 1024`
 
-Three full eval runs document **prompt engineering** (Runs 1–3). **Run 4** adds LLM-as-judge semantic scores on the same outputs as Run 3.
+Three full eval runs document **prompt engineering** (Runs 1–3). **Run 4** adds self-judge semantic scores. **Run 5** re-scores Run 4 with an external judge (Qwen2.5-72B). **Run 6** applies structure prompt pass 2 and reaches **76.5% concept / 75.7% structure**.
 
 ## Run changelog — what changed between runs
 
@@ -15,7 +15,7 @@ All runs share unless noted:
 - **Gold set:** 115 rows, **isolated eval** (assertion from indicator; question from gold assertion)
 - **Config:** `mock: false`, `enable_thinking: false`, `temperature: 0.0`, `max_tokens: 1024`
 - **Scoring:** exact match on concept/structure/question after `normalize.py`
-- **Judge:** off in Runs 1–3; **on in Run 4** (`eval.run_judge: true`)
+- **Judge:** off in Runs 1–3; **self-judge (9B) in Run 4**; **external judge (72B) in Run 5** on Run 4 predictions
 
 Git commits: `1fdd4bf` → Run 1; `7fd51fa` → Run 2; `3485c2d` → Run 3/4 code.
 
@@ -141,57 +141,131 @@ Git commits: `1fdd4bf` → Run 1; `7fd51fa` → Run 2; `3485c2d` → Run 3/4 cod
 
 **No changes to:** prompts, `normalize.py`, schemas, or temperature.
 
-**Measured impact vs Run 3:** objective metrics **identical**; adds mean IA **4.51** and mean AQ **4.99**.
+**Measured impact vs Run 3:** objective metrics **identical**; adds mean IA **4.51** and mean AQ **4.99** (self-judge, same model as generator).
+
+---
+
+### Run 5 — External judge (`20260703_171851`)
+
+**Purpose:** Re-score Run 4 predictions with a **separate, stronger judge** to quantify self-grade bias. No pipeline rerun; no prompt changes.
+
+**Setup:**
+
+| Component | Value |
+|-----------|--------|
+| Judge model | Qwen2.5-72B-Instruct |
+| Server | vLLM on port 8001, `tensor-parallel-size=2` (2× H100) |
+| Input | Run 4 CSV (`eval_report_vllm_20260625_160020.csv`) |
+| Script | `scripts/run_judge_only.py` (230 judge calls: IA + AQ per row) |
+
+**Measured impact vs Run 4 self-judge:**
+
+| Metric | Self (9B) | External (72B) | Δ |
+|--------|-----------|----------------|---|
+| Mean indicator→assertion | **4.51** | **4.09** | −0.42 |
+| Mean assertion→question | **4.99** | **4.56** | −0.43 |
+| IA score = 5 | 97 / 115 (84%) | 43 / 115 (37%) | — |
+| AQ score = 5 | 114 / 115 (99%) | 64 / 115 (56%) | — |
+| Rows with ext IA ≤ 2 | — | 5 / 115 | — |
+
+Objective metrics unchanged: **75.7%** concept, **62.6%** structure, **18.3%** question exact match.
+
+---
+
+### Run 6 — Structure prompt pass 2 (`20260703_180434`)
+
+**Purpose:** Target remaining structure-code errors (`xFD`, `xFy`, `xDpl`, `vIi`/`xIi`, `xDqu`, `xDti`) without fine-tuning.
+
+**Code changes:**
+
+#### 1. Assertion prompt — `assertion_developer.md`
+
+- Corrected **Examples 2 & 8**: Action tendencies and Expectations use **`xFD`** (not `rFDy` / `xFDy`)
+- Expanded structure disambiguation table; added rules for Feelings (`xFy`), Place/Procedures (`xDpl` / `xDpl, pro`), Quantities (`xDqu`), Time (`xDti`), Values vs Importance
+- **7 new worked examples (10–16):** stress (`xFy`), country (`xDpl`), passport procedure, job security importance, societal values, household size, engagement duration
+- Demographics phrasing guidance (factual status, not evaluative paraphrase)
+
+#### 2. Concepts reference — `data/concepts.yaml`
+
+- Synced allowed structure codes with gold set: Action tendencies + Expectations → `xFD`; Place/Procedures → `xDpl` / `xDpl, pro`; Values structure 3 → `xIi`
+
+**Config:** `eval.run_judge: false` (objective metrics only). Smoke test `20260703_175707` (5 rows) then full 115-row run.
+
+**Measured impact vs Run 4:**
+
+| Metric | Run 4 | Run 6 | Δ |
+|--------|-------|-------|---|
+| Concept accuracy | 75.7% | **76.5%** | +0.9 pp |
+| Structure accuracy | 62.6% | **75.7%** | **+13.0 pp** |
+| Both correct | 60.9% | **73.9%** | +13.0 pp |
+| Question non-empty | 100% | 100% | — |
+| Question exact match | 18.3% | 17.4% | −0.9 pp |
+
+**Structure codes fixed (27 rows that were wrong in Run 4):** all 8 `xFD` rows (except ID 19 concept error), 5/6 `xDpl`, 3/4 `xFy`, both `vIi`, both `xDti`, both `xDqu`, 3 Place rows, 4 Action tendencies intentions.
+
+**New regressions (12 rows correct in Run 4, wrong in Run 6):** mainly **Norms** `o(H+I)y` → `vIi` (3 rows); plus scattered concept+structure slips (Evaluation, Preference, Causal relationship).
+
+**Remaining structure errors:** 28/115. Hardest: Norms (0%), Evaluative belief `xP` (0%), Causal relationship (33%), Events (60%).
 
 ---
 
 ### Summary: cumulative engineering vs metrics
 
-| Layer | Run 1 | Run 2 | Run 3 | Run 4 |
-|-------|-------|-------|-------|-------|
-| vLLM JSON / thinking off | ✓ | | | |
-| Isolated 115-row eval | ✓ | | | |
-| Spelling-normalized scoring | | ✓ | | |
-| Concept `enum` in guided_json | | ✓ | | |
-| Concept disambiguation prompt | | ✓ | | |
-| Examples 4–6 (concepts) | | ✓ | | |
-| Structure disambiguation table | | | ✓ | |
-| Examples 7–9 (structures) | | | ✓ | |
-| Question JSON repair | | | ✓ | |
-| Confusion matrices / breakdown | | | ✓ | |
-| LLM-as-judge scoring | | | (code) | ✓ |
+| Layer | Run 1 | Run 2 | Run 3 | Run 4 | Run 5 | Run 6 |
+|-------|-------|-------|-------|-------|-------|-------|
+| vLLM JSON / thinking off | ✓ | | | | | |
+| Isolated 115-row eval | ✓ | | | | | |
+| Spelling-normalized scoring | | ✓ | | | | |
+| Concept `enum` in guided_json | | ✓ | | | | |
+| Concept disambiguation prompt | | ✓ | | | | |
+| Examples 4–6 (concepts) | | ✓ | | | | |
+| Structure disambiguation table | | | ✓ | | | |
+| Examples 7–9 (structures) | | | ✓ | | | |
+| Question JSON repair | | | ✓ | | | |
+| Confusion matrices / breakdown | | | ✓ | | | |
+| LLM-as-judge scoring | | | (code) | ✓ (self) | ✓ (ext) | |
+| Structure prompt pass 2 | | | | | | ✓ |
+| concepts.yaml gold alignment | | | | | | ✓ |
 
-| Metric | Run 1 | Run 2 | Run 3 | Run 4 | R1→R3 |
-|--------|-------|-------|-------|-------|--------|
-| Concept accuracy | 57.4% | 69.6% | 75.7% | 75.7%* | +18.3 pp |
-| Structure accuracy | 51.3% | 55.7% | 62.6% | 62.6%* | +11.3 pp |
-| Both correct | 42.6% | 53.0% | 60.9% | 60.9%* | +18.3 pp |
-| Question non-empty | 99.1% | 99.1% | 100% | 100%* | +0.9 pp |
-| Mean IA judge (1–5) | — | — | — | **4.51** | — |
-| Mean AQ judge (1–5) | — | — | — | **4.99** | — |
+| Metric | Run 1 | Run 2 | Run 3 | Run 4 | Run 6 | R1→R6 |
+|--------|-------|-------|-------|-------|-------|--------|
+| Concept accuracy | 57.4% | 69.6% | 75.7% | 75.7%* | **76.5%** | +19.1 pp |
+| Structure accuracy | 51.3% | 55.7% | 62.6% | 62.6%* | **75.7%** | +24.4 pp |
+| Both correct | 42.6% | 53.0% | 60.9% | 60.9%* | **73.9%** | +31.3 pp |
+| Question non-empty | 99.1% | 99.1% | 100% | 100%* | 100% | +0.9 pp |
+| Mean IA judge (1–5) | — | — | — | **4.51** (self) | — | — |
+| Mean AQ judge (1–5) | — | — | — | **4.99** (self) | — | — |
 
-\*Run 4 objective metrics match Run 3 (same model outputs; judge adds 2 scoring calls per row).
+| Metric | Run 5 (ext judge on Run 4 preds) |
+|--------|----------------------------------|
+| Mean IA judge (72B) | **4.09** |
+| Mean AQ judge (72B) | **4.56** |
+| Ext AQ score ≥ 4 | **100%** (115/115) |
+
+\*Run 4 objective metrics match Run 3 (same generations; judge adds scoring only).
 
 ---
 
 ## Results at a glance
 
-| Metric | Run 1 — Initial | Run 2 — Prompt tuning | Run 3 — Structure prompt | Run 4 — + Judge | Δ (R2→R3) |
-|--------|-----------------|----------------------|--------------------------|-----------------|-----------|
-| Concept accuracy | 57.4% (66/115) | 69.6% (80/115) | **75.7%** (87/115) | 75.7%* | **+6.1 pp** |
-| Structure accuracy | 51.3% (59/115) | 55.7% (64/115) | **62.6%** (72/115) | 62.6%* | **+6.9 pp** |
-| Both correct | 42.6% (49/115) | 53.0% (61/115) | **60.9%** (70/115) | 60.9%* | **+7.8 pp** |
-| Question non-empty | 99.1% (114/115) | 99.1% (114/115) | **100%** (115/115) | 100%* | **+0.9 pp** |
-| Question exact match | 20.0% (23/115) | 20.0% (23/115) | 18.3% (21/115) | 18.3%* | −1.7 pp |
-| Mean IA judge score | — | — | — | **4.51 / 5** | — |
-| Mean AQ judge score | — | — | — | **4.99 / 5** | — |
+| Metric | Run 1 | Run 2 | Run 3 | Run 4 | Run 6 (**best**) | Δ (R4→R6) |
+|--------|-------|-------|-------|-------|------------------|-----------|
+| Concept accuracy | 57.4% | 69.6% | 75.7% | 75.7%* | **76.5%** (88/115) | +0.9 pp |
+| Structure accuracy | 51.3% | 55.7% | 62.6% | 62.6%* | **75.7%** (87/115) | **+13.0 pp** |
+| Both correct | 42.6% | 53.0% | 60.9% | 60.9%* | **73.9%** (85/115) | +13.0 pp |
+| Question non-empty | 99.1% | 99.1% | 100% | 100%* | 100% | — |
+| Question exact match | 20.0% | 20.0% | 18.3% | 18.3%* | 17.4% | −0.9 pp |
+| Mean IA judge (1–5) | — | — | — | 4.51 (9B) | — | — |
+| Mean AQ judge (72B, Run 5) | — | — | — | 4.56 | — | — |
 
 | Run | Date | Timestamp | Artifacts |
 |-----|------|-----------|-----------|
 | 1 — Initial baseline | 2026-06-20 | `20260620_185119` | `docs/baseline/eval_*_20260620_185119.*` |
 | 2 — Prompt tuning | 2026-06-20 | `20260620_194152` | `docs/baseline/eval_*_20260620_194152.*` |
-| 3 — Structure prompt | 2026-06-25 | `20260625_134833` | `docs/baseline/eval_*_20260625_134833.*` |
-| 4 — LLM-as-judge (**full eval report**) | 2026-06-25 | `20260625_160020` | `docs/baseline/eval_*_20260625_160020.*` |
+| 3 — Structure prompt v1 | 2026-06-25 | `20260625_134833` | `docs/baseline/eval_*_20260625_134833.*` |
+| 4 — Self-judge | 2026-06-25 | `20260625_160020` | `docs/baseline/eval_*_20260625_160020.*` |
+| 5 — External judge (72B) | 2026-07-03 | `20260703_171851` | `docs/baseline/eval_*_ext_judge_20260703_171851.*` |
+| 6 — Structure prompt v2 (**full eval report**) | 2026-07-03 | `20260703_180434` | `docs/baseline/eval_*_20260703_180434.*` |
 
 \*Run 4 re-scores the same generations as Run 3; only judge columns are new.
 
@@ -206,7 +280,7 @@ Each gold row is scored in two independent stages (not chained):
 
 Metrics are **exact match** after normalization (`src/sig/normalize.py`): lowercase, whitespace stripped; US/UK spelling unified (`Behavior`/`Behaviour`, `judgment`/`judgement`); structure codes extracted via regex (e.g. `xIe`, `xPRy`).
 
-Question exact match compares normalized predicted vs gold question strings. **Run 4** adds LLM-as-judge (`judge.py`, 1–5 scale) for indicator→assertion and assertion→question semantic alignment. Judge uses the same Qwen3.5-9B model (self-grade limitation; see Run 4).
+Question exact match compares normalized predicted vs gold question strings. **Run 4** adds self-judge (`judge.py`, 1–5 scale) using Qwen3.5-9B. **Run 5** re-scores the same predictions with Qwen2.5-72B via `scripts/run_judge_only.py` (see external judge caveat below).
 
 ---
 
@@ -362,35 +436,201 @@ Prompt engineering alone moved assertion accuracy from ~50% to ~76% concept / ~6
 
 **Hardest concepts by mean IA score:** Causal relationship (2.0), Feelings (3.5), Procedures (3.7), Demographics (4.13), Cognitive judgment (4.14).
 
-**3. Self-grading caveat.**
+**3. Self-grading caveat (addressed in Run 5).**
 
-Judge and generator are the **same model** (Qwen3.5-9B). Scores may be optimistic, especially for assertion→question (4.99/5). A stronger separate judge (e.g. Qwen2.5-72B) would be more defensible for publication.
+Judge and generator are the **same model** (Qwen3.5-9B) in Run 4. Scores may be optimistic, especially for assertion→question (4.99/5). Run 5 external judge confirms this; see below.
 
 **4. Objective vs semantic evaluation serve different roles.**
 
 | Stage | Objective metric | Semantic (judge) | Interpretation |
 |-------|------------------|------------------|----------------|
 | Assertion | 75.7% concept | 4.51 IA | Taxonomy errors remain; assertions often still read as faithful paraphrases |
-| Question | 18.3% exact | 4.99 AQ | Wording differs from gold; meaning preserved |
+| Question | 18.3% exact | 4.99 AQ (self) | Wording differs from gold; meaning preserved |
+
+---
+
+## Run 5 — External judge (`20260703_171851`)
+
+**Purpose:** Quantify self-grade bias by re-scoring Run 4 predictions with **Qwen2.5-72B-Instruct** (separate vLLM on port 8001, 2× H100). No changes to prompts, generations, or objective metrics.
+
+### Headline
+
+| Metric | Self-judge (9B, Run 4) | External judge (72B, Run 5) |
+|--------|------------------------|-----------------------------|
+| Mean indicator→assertion | **4.51** | **4.09** |
+| Mean assertion→question | **4.99** | **4.56** |
+| IA score = 5 | 97 / 115 (84%) | 43 / 115 (37%) |
+| AQ score = 5 | 114 / 115 (99%) | 64 / 115 (56%) |
+| AQ score ≥ 4 | 115 / 115 (100%) | **115 / 115 (100%)** |
+| Rows with ext IA ≤ 2 | 18 (self) | **5** |
+
+### External judge score distributions
+
+| IA score (72B) | Count | AQ score (72B) | Count |
+|----------------|-------|----------------|-------|
+| 1 | 1 | 4 | 51 |
+| 2 | 4 | 5 | 64 |
+| 3 | 22 | | |
+| 4 | 45 | | |
+| 5 | 43 | | |
+
+Self-judge IA was bimodal (97× score 5, 18× ≤2). External judge spreads scores across 3–5, with a more realistic median of **4** for IA.
+
+### Key findings
+
+**1. Self-grade bias confirmed, but conclusions largely hold.**
+
+Both judge types drop ~0.43 points on average (IA and AQ). The 9B model was lenient when grading its own outputs. However, **external AQ remains 4.56/5** with **100% of rows ≥ 4**, so the Run 4 conclusion (question stage is strong semantically) survives external validation.
+
+**2. Exact-match vs judge finding is robust to external judge.**
+
+| Cohort | Mean ext AQ |
+|--------|-------------|
+| Exact question match (n=21) | 4.62 |
+| Non-exact match (n=94) | 4.54 |
+| Non-exact with ext AQ ≥ 4 | **94 / 94** |
+
+Correlation self↔ext AQ: **r = 0.11** (self gave almost all 5s; external discriminates more). Correlation exact match ↔ ext AQ remains negligible.
+
+**3. Assertion stage: external judge penalizes demographic phrasing.**
+
+Largest self−ext gaps (self=5, ext=3) cluster on **Demographics** indicators even when the concept label is correct:
+
+- *Living situation*, *Household composition*, *Employment status*, *Emergency contact phone number*
+
+The 72B judge flags first-person paraphrases ("My employment status is…") as scope mismatches for factual demographic indicators, whereas the 9B self-judge rated them perfect.
+
+**Worst external IA rows:**
+
+| ID | Indicator | Ext IA | Self IA | Issue |
+|----|-----------|--------|---------|-------|
+| 59 | Medication details | 1 | 1 | Procedures → Demographics |
+| 55 | Average stress level | 2 | 2 | Feelings, structure wrong |
+| 57 | Medical conditions | 2 | 2 | Events → Demographics |
+| 65 | Length of engagement | 2 | 5 | Time → Demographics; self over-rated |
+| 70 | Areas for improvement | 2 | 2 | Evaluation → Preference |
+
+**4. Concept correctness gap narrows under external judge.**
+
+| Condition | Mean IA (self) | Mean IA (72B) |
+|-----------|----------------|---------------|
+| Concept wrong (n=28) | 4.21 | **3.89** |
+| Concept correct (n=87) | 4.61 | **4.15** |
+
+External judge penalizes wrong concepts more consistently. Self-judge still gave high IA scores to many taxonomy errors.
+
+**Hardest concepts by external mean IA:** Procedures (3.00), Demographics (3.47), Behavior (3.57), Cognitive judgment (3.71).
+
+**5. Correlation self ↔ external.**
+
+| Pair | r |
+|------|---|
+| IA self vs ext | **0.52** |
+| AQ self vs ext | **0.11** |
+
+Moderate agreement on assertions; near-zero on questions because self-judge collapsed to 5.
+
+### Figures
+
+Run 5 figures: `fig12_self_vs_external_judge`, `fig13_ext_judge_distributions`, `fig14_exact_match_vs_ext_judge`.
+
+---
+
+## Run 6 — Structure prompt pass 2 (`20260703_180434`)
+
+**Purpose:** Close the structure-code gap left after Run 3/4 without fine-tuning. Largest single-run gain in the project.
+
+### Headline
+
+| Metric | Run 4 | Run 6 | Δ |
+|--------|-------|-------|---|
+| Concept accuracy | 75.7% | **76.5%** | +0.9 pp |
+| Structure accuracy | 62.6% | **75.7%** | **+13.0 pp** |
+| Both correct | 60.9% | **73.9%** | +13.0 pp |
+| Question non-empty | 100% | 100% | — |
+| Question exact match | 18.3% | 17.4% | −0.9 pp |
+
+### Structure code wins (Run 4 → Run 6)
+
+| Code | Run 4 | Run 6 | Notes |
+|------|-------|-------|-------|
+| `xFD` | 0% (0/8) | **88%** (7/8) | Fixed repurchase, recommendation, follow-up, all 3 Expectations |
+| `xDpl` | 0% (0/6) | **83%** (5/6) | Place + Procedures location/process |
+| `xFy` | 0% (0/4) | **75%** (3/4) | Stress, belonging, work engagement |
+| `xDti` | 0% (0/3) | **100%** (3/3) | Tenure, start year |
+| `xDqu` | 0% (0/3) | **100%** (3/3) | Sleep hours, household size |
+| `vIi` | 0% (0/2) | **100%** (2/2) | Societal values rows |
+
+**27 rows** that had wrong structure in Run 4 are now correct. **12 rows** regressed (mostly Norms + concept confusions).
+
+### Per-concept highlights
+
+| Concept | Run 4 struct | Run 6 struct | Notes |
+|---------|--------------|--------------|-------|
+| Place | 0% | **100%** | `xDpl` examples fixed all 3 |
+| Time | 33% | **100%** | `xDti` rule |
+| Quantities | 33% | **100%** | `xDqu` rule |
+| Expectations | 0% | **100%** | `xFD` direct future tense |
+| Action tendencies | 0% | **80%** | 4/5; ID 19 still wrong concept |
+| Feelings | 0% | **75%** | 3/4 |
+| Norms | 100% | **0%** | **Regression:** all 3 → `vIi` instead of `o(H+I)y` |
+| Policies | 67% | 67% | unchanged |
+| Causal relationship | 33% | 33% | unchanged |
+
+### Remaining errors (28 structure-wrong rows)
+
+**By type:**
+
+1. **Concept + structure both wrong** (majority): Evaluation↔Preference/Feelings, Events↔Demographics, Norms↔Values, Causal↔Cognitive judgment
+2. **Concept right, structure wrong:** Evaluative belief `xP` vs `xPyc`/`xIc` (2 rows); Values `xIi` vs `vIi` (ID 4); Similarity `xIs` vs `xSy` (1 row)
+3. **Norms structure:** model outputs `vIi` for all three "people should / ought to / should always" indicators
+
+**Hardest remaining concepts:** Norms (0% concept, 0% structure), Policies (0% concept), Causal relationship (33%), Evaluative belief structure (33%).
+
+### Key findings
+
+**1. Structure pass 2 was the highest-leverage prompt change.**
+
+Cumulative Run 1→Run 6: concept **+19.1 pp**, structure **+24.4 pp**, both correct **+31.3 pp**. Run 6 alone added more structure accuracy than Runs 1–3 combined.
+
+**2. Fixing wrong teaching examples mattered.**
+
+Run 3 Examples 2 and 8 taught `rFDy` and `xFDy`; gold labels use **`xFD`**. Aligning examples with gold + `concepts.yaml` resolved 7/8 `xFD` errors immediately.
+
+**3. Trade-off: Norms regressed.**
+
+Pass 2 strengthened Values/Importance (`vIi`/`xIi`) rules; the model now maps deontic "should/ought" indicators to Values (`vIi`) instead of Norms (`o(H+I)y`). A targeted Norms few-shot is the obvious Run 7 prompt fix.
+
+**4. Question stage unchanged.**
+
+100% non-empty; exact match ~17% (still not a quality signal; judge scores from Run 5 still apply to question semantics).
+
+**5. LoRA is now optional, not urgent.**
+
+**76% / 76%** objective accuracy from prompting alone exceeds the ~70% structure plateau threshold. Remaining gains likely need Norms/Policies/Causal few-shots or fine-tuning on rare concepts (n=3 each).
+
+### Figures
+
+Run 6 updates `fig01`–`fig07` (progression now includes Run 6; heatmaps/confusions from `20260703_180434`). Judge figures (`fig08`–`fig11`) remain from Run 4; external judge (`fig12`–`fig14`) from Run 5.
 
 ---
 
 ## Interpretation
 
-**Assertion stage:** Three prompt passes yielded steady gains. Concept labeling is now reasonable on frequent categories (Demographics, Evaluation, Preference). Remaining errors concentrate on rare concepts (Policies, Place, Values) and **fine-grained structure codes** within correctly chosen concepts (`xFD` vs `xFDy`, `xFy`, `vIi` vs `xIi`).
+**Assertion stage:** Four prompt passes (Runs 1–3, 6) brought concept accuracy to **76.5%** and structure to **75.7%** without fine-tuning. Run 6 structure pass 2 fixed the main systematic errors (`xFD`, `xDpl`, `xFy`, `xDqu`, `xDti`, `vIi`). Remaining errors concentrate on **rare concepts** (Norms, Policies, Causal relationship; n=3 each) and **concept–structure coupling** when the concept label is wrong.
 
-**Question stage:** Coverage is solved (100%). Exact string match (~18%) is misleading; **Run 4 judge** shows **4.99/5** assertion→question alignment. Use judge scores in the paper; cite exact match only as a strict automated baseline.
+**Question stage:** Coverage is solved (100%). Exact string match (~17%) is misleading. Run 5 external judge confirms **4.56/5** AQ with **100% ≥ 4**. Report external judge scores in the paper; cite exact match only as a strict automated baseline.
 
-**Evaluation strategy:** Report **both** taxonomy exact-match (assertion) and LLM-as-judge alignment. They measure different things: framework adherence vs semantic fidelity.
+**Evaluation strategy:** Report taxonomy exact-match (assertion) and LLM-as-judge alignment (Run 5 external 72B). They measure framework adherence vs semantic fidelity.
 
-**Fine-tuning decision:** Prompt tuning reached **76% concept / 63% structure** objectively, with strong semantic scores on questions. LoRA on the assertion stage targets taxonomy/structure codes (`xFD`, rare concepts), not question generation.
+**Fine-tuning decision:** Prompt tuning reached **76.5% / 75.7%** objectively. LoRA is optional; highest-value prompt work left is **Norms** (`o(H+I)y` vs `vIi`) and **Policies/Causal** disambiguation. Re-run external judge on Run 6 predictions to update semantic scores.
 
 ## Recommended next steps
 
-1. **Structure prompt pass 2:** target `xFD`/`xFDy`, `xFy`, `vIi`, Place/Procedures (`xDpI`)
-2. **External judge:** re-run judge with Qwen2.5-72B (or human spot-check) to reduce self-grade bias
-3. **LoRA SFT:** assertion developer if structure plateaus below ~70%
-4. **Report for Caro:** Run 4 summary + figures in `docs/figures/` (include `fig08`–`fig11`)
+1. **Norms prompt pass:** few-shot for `o(H+I)y` vs Values `vIi` (fix Run 6 regression)
+2. **External judge on Run 6:** `run_judge_only.py` on `eval_report_vllm_20260703_180434.csv`
+3. **Human spot-check:** ~20 rows to validate 72B judge against expert ratings
+4. **LoRA SFT (optional):** rare concepts if prompt passes plateau on Norms/Policies
 
 ## How to reproduce
 
@@ -410,21 +650,33 @@ Quick test (5 rows): set `eval.max_rows: 5` in `config.yaml`.
 Publication-quality plots (PDF + PNG) are generated from baseline artifacts:
 
 ```bash
-python scripts/generate_figures.py --run-id 20260625_160020
+python scripts/generate_figures.py --run-id 20260703_180434
 ```
 
-See `docs/figures/FIGURES.md` for file list and suggested captions (includes judge figures `fig08`–`fig11`).
+See `docs/figures/FIGURES.md` for file list and suggested captions. Judge figures use Run 4 (`--judge-run-id 20260625_160020`); external judge figures from Run 5.
 
 Offline analysis (no GPU):
 
 ```bash
-python scripts/analyze_eval.py docs/baseline/eval_report_vllm_20260625_160020.csv
+python scripts/analyze_eval.py docs/baseline/eval_report_vllm_20260703_180434.csv
 ```
 
-With LLM-as-judge (Run 4):
+With LLM-as-judge (Run 4, self):
 
 ```yaml
 # config.yaml
 eval:
   run_judge: true
 ```
+
+External judge only (Run 5, no pipeline rerun):
+
+```bash
+# Terminal 1: 2× GPU, start 72B judge server
+bash scripts/start_vllm_judge.sh
+
+# Terminal 2: re-score Run 4 CSV
+python scripts/run_judge_only.py docs/baseline/eval_report_vllm_20260625_160020.csv
+```
+
+Or batch: `sbatch scripts/run_external_judge.sh`

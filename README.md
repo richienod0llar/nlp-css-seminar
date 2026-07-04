@@ -2,20 +2,22 @@
 
 Prompt-driven pipeline to generate survey items from health indicators (Assertion Developer + Question Developer), evaluated against a gold set. Runs on LRZ with **Qwen3.5-9B** served via vLLM.
 
-**Status:** Phase 1b complete (2026-06-25): Run 4 with judge — **75.7%** concept / **62.6%** structure / **4.99/5** question alignment. See [docs/BASELINE_REPORT.md](docs/BASELINE_REPORT.md). Next: structure pass for `xFD`/`xFy`, optional external judge or LoRA. Full plan: [docs/PLAN.md](docs/PLAN.md).
+**Status:** Phase 1d complete (2026-07-03): Run 6 structure pass 2 — **76.5%** concept / **75.7%** structure. See [docs/BASELINE_REPORT.md](docs/BASELINE_REPORT.md). Next: Norms prompt fix, external judge on Run 6. Full plan: [docs/PLAN.md](docs/PLAN.md).
 
 ## Baseline results (Qwen3.5-9B, zero-shot + judge)
 
-| Metric | Run 3 | Run 4 (+ judge) |
-|--------|-------|-----------------|
-| Concept accuracy | **75.7%** | 75.7% |
-| Structure accuracy | **62.6%** | 62.6% |
-| Question non-empty | **100%** | 100% |
-| Question exact match | 18.3% | 18.3% |
-| Mean IA judge (1–5) | — | **4.51** |
-| Mean AQ judge (1–5) | — | **4.99** |
+| Metric | Run 4 | Run 5 (72B judge) | **Run 6 (best)** |
+|--------|-------|-------------------|------------------|
+| Concept accuracy | 75.7% | 75.7%* | **76.5%** |
+| Structure accuracy | 62.6% | 62.6%* | **75.7%** |
+| Both correct | 60.9% | 60.9%* | **73.9%** |
+| Question non-empty | 100% | 100% | **100%** |
+| Mean IA judge (72B) | — | **4.09** | —† |
+| Mean AQ judge (72B) | — | **4.56** | —† |
 
-Prompt-engineering progression (Runs 1→3): concept 57% → 70% → **76%**; structure 51% → 56% → **63%**.
+\*Run 5 judged Run 4 predictions. †Re-score Run 6 with external judge (recommended).
+
+Prompt-engineering progression (Runs 1→6): concept 57% → **77%**; structure 51% → **76%**.
 
 ## Repo layout
 
@@ -122,6 +124,9 @@ For mock mode (no GPU): set `mock: true` and run the same commands.
 | `request_gpu.sh` | Interactive 1× H100 via `salloc` |
 | `activate_env.sh` | Activate `sig-llm` + CUDA lib paths |
 | `start_vllm.sh` | Serve Qwen3.5-9B on port 8000 |
+| `start_vllm_judge.sh` | Serve Qwen2.5-72B judge on port 8001 (2 GPUs) |
+| `run_judge_only.py` | Re-score existing eval CSV with external judge |
+| `run_external_judge.sh` | sbatch wrapper for external judge |
 | `smoke_test_llm.py` | Test vLLM OpenAI API |
 | `run_test_pipeline.py` | One-indicator pipeline demo |
 | `src/sig/evaluation/run_eval.py` | Full gold-set eval (isolated mode) |

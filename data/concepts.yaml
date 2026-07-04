@@ -60,13 +60,13 @@ Concepts:
     structures:
       1: "vIi"
       2: null
-      3: null
+      3: "xIi"
 
   Feelings:
     type: subjective
     structures:
       1: "xIf"
-      2: "xFy or xPf"
+      2: "xFy"
       3: null
 
   Cognitive judgement:
@@ -122,14 +122,14 @@ Concepts:
     type: subjective
     structures:
       1: null
-      2: "rFDy"
-      3: null
+      2: null
+      3: "xFD"
 
   Expectations of future events:
     type: subjective
     structures:
       1: null
-      2: "xFDy"
+      2: null
       3: "xFD"
 
   Evaluative belief:
@@ -180,7 +180,7 @@ Concepts:
     structures:
       1: null
       2: null
-      3: "xDpI"
+      3: "xDpl"
 
   Quantities:
     type: objective
@@ -194,7 +194,7 @@ Concepts:
     structures:
       1: null
       2: null
-      3: "xDpI, pro"
+      3: "xDpl, pro"
 
 question_formats:
   -"Direct interrogative (with WH word)"
