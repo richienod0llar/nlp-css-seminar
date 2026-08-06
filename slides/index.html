@@ -177,7 +177,7 @@
     <div class="box" style="opacity:.45;"><div class="t">Item Reviser</div><div class="s">Final output</div></div>
   </div>
   <div class="cols" style="margin-top:.5em;">
-    <div class="card ok"><h4>Our contribution</h4><p style="color:var(--ink);">We design, implement, and evaluate the <strong>Assertion Developer</strong> and <strong>Question Developer</strong> agents — the core measurement-decision layer of the pipeline.</p></div>
+    <div class="card ok"><h4>Our contribution</h4><p style="color:var(--ink);">We design, implement, and evaluate the <strong>Assertion Developer</strong> and <strong>Question Developer</strong> agents: the core measurement-decision layer of the pipeline.</p></div>
     <div class="card"><h4>Evaluation strategy</h4><p>Each agent is scored <strong>independently</strong>: the Question Developer always receives the <em>gold assertion</em>, so errors don't compound across stages.</p></div>
   </div>
   <aside class="notes">Before diving into the method, here's where our two agents sit in the full system. The greyed-out boxes are other teams' work. We own the two green boxes: the assertion stage (the hard classification step) and the question stage (the writing step).</aside>
@@ -237,12 +237,12 @@
     <div class="box agent2"><div class="t">"How satisfied are you<br>with this product?"</div><div class="s">Rating scale · Direct interrogative</div></div>
   </div>
   <div class="cols" style="margin-top:.4em;">
-    <div class="card ok"><h4>Why the middle step matters</h4><p>The assertion forces the model to <strong>commit to a measurement decision</strong> before writing wording. That decision is where difficulty — and most errors — live.</p></div>
+    <div class="card ok"><h4>Why the middle step matters</h4><p>The assertion forces the model to <strong>commit to a measurement decision</strong> before writing wording. That decision is where difficulty, and most errors, live.</p></div>
     <div>
       <div class="card alt"><h4>A near-miss: Repurchase intention</h4>
         <p>Gold: <span class="codey">Action tendencies · rFDy</span></p>
         <p>Model: <span class="codey">Action tendencies · rFDy</span> ✓ → <em>"How likely are you to purchase again?"</em></p>
-        <p style="font-size:.78em; color:var(--muted);">Both codes express future behavior — the model must distinguish <em>intention</em> (<span class="codey">rFDy</span>) from <em>forecast</em> (<span class="codey">xFDy</span>).</p>
+        <p style="font-size:.78em; color:var(--muted);">Both codes express future behavior: the model must distinguish <em>intention</em> (<span class="codey">rFDy</span>) from <em>forecast</em> (<span class="codey">xFDy</span>).</p>
       </div>
     </div>
   </div>
