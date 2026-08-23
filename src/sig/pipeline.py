@@ -7,8 +7,11 @@ from src.sig.schema import GoldRow
 class SurveyPipeline:
     def __init__(self, config: Dict[str, Any]):
         self.config = config
+        prompts = config.get("prompts", {})
         self.assertion_dev = Assertion_Developer(config)
-        self.question_dev = Question_Developer(config, "src/sig/prompts/question_developer.md")
+        self.question_dev = Question_Developer(
+            config, prompts.get("question", "src/sig/prompts/question_developer.md")
+        )
 
     def process_indicator(self, input_indicator: str) -> Dict[str, Any]:
         """Chained demo: indicator -> assertion -> question (uses predicted assertion)."""

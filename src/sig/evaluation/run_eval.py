@@ -1,3 +1,4 @@
+import argparse
 import json
 from datetime import datetime
 from pathlib import Path
@@ -18,11 +19,27 @@ from src.sig.pipeline import SurveyPipeline
 
 
 def main():
-    with open("config.yaml", "r") as f:
+    ap = argparse.ArgumentParser(description="Run the gold-set evaluation.")
+    ap.add_argument("--config", default="config.yaml")
+    ap.add_argument("--assertion-prompt", help="Override prompts.assertion (ablation arms)")
+    ap.add_argument("--tag", help="Label embedded in the output filenames")
+    ap.add_argument("--max-rows", type=int, help="Override eval.max_rows")
+    ap.add_argument("--model", help="Override llm.model (e.g. generate with the 72B)")
+    ap.add_argument("--base-url", help="Override llm.base_url")
+    args = ap.parse_args()
+
+    with open(args.config, "r") as f:
         config = yaml.safe_load(f)
 
+    if args.assertion_prompt:
+        config.setdefault("prompts", {})["assertion"] = args.assertion_prompt
+    if args.model:
+        config["llm"]["model"] = args.model
+    if args.base_url:
+        config["llm"]["base_url"] = args.base_url
+
     eval_cfg = config.get("eval", {})
-    max_rows = eval_cfg.get("max_rows")  # None = all rows
+    max_rows = args.max_rows if args.max_rows is not None else eval_cfg.get("max_rows")
     run_judge = eval_cfg.get("run_judge", False)
     output_dir = Path(eval_cfg.get("output_dir", config["output"]["dir"]))
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -34,6 +51,8 @@ def main():
     rows = dm.gold_data if max_rows is None else dm.gold_data[: int(max_rows)]
     mock = config["llm"].get("mock", False)
     mode = "mock" if mock else "vllm"
+    if args.tag:
+        mode = f"{mode}_{args.tag}"
 
     print(f"Starting evaluation ({mode}) on {len(rows)} rows...")
     if run_judge:

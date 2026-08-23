@@ -30,14 +30,15 @@ notation:
   pl: "place expression"
   qu: "quantity expression"
   pro: "procedure expression"
-  y: "object / second entity"
-  "y": (changed/affected entity)
+  y: "object / second entity (the changed or affected entity)"
   z: "comparison referent"
+  v: "impersonal subject ('it'), used for general value statements"
+  "(e)": "evaluative qualifier on the predicator (e.g. xP(e)y)"
 
 structures:
-  1:"xIsc - subject + link verb + scale/classifier (e.g. "someone is bad")"
-  2:"xPy - subject + predicator + object (e.g. "New laws have changed the position of women")"
-  3:"xP - subject + predicator, no object (e.g. "Position of President has changed")"
+  1: 'xIsc - subject + link verb + scale/classifier (e.g. "someone is bad")'
+  2: 'xPy - subject + predicator + object (e.g. "New laws have changed the position of women")'
+  3: 'xP - subject + predicator, no object (e.g. "Position of President has changed")'
 
 Concepts:
   # --Subjective variables--
@@ -197,8 +198,8 @@ Concepts:
       3: "xDpl, pro"
 
 question_formats:
-  -"Direct interrogative (with WH word)"
-  -"Direct interrogative (without WH word)"
-  -"Direct imperative"
-  -"Indirect interrogative"
-  -"Indirect imperative"
+  - "Direct interrogative (with WH word)"
+  - "Direct interrogative (without WH word)"
+  - "Direct imperative"
+  - "Indirect interrogative"
+  - "Indirect imperative"

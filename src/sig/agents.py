@@ -27,7 +27,10 @@ class BaseAgent:
 
 class Assertion_Developer(BaseAgent):
     def __init__(self, config: Dict[str, Any]):
-        super().__init__(config, "src/sig/prompts/assertion_developer.md")
+        prompt = config.get("prompts", {}).get(
+            "assertion", "src/sig/prompts/assertion_developer.md"
+        )
+        super().__init__(config, prompt)
         self.valid_concepts = load_concept_names(config["data"]["concepts"])
 
     def run(self, input_indicator: str) -> AssertionResult:

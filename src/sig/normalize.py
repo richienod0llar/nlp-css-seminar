@@ -1,8 +1,17 @@
 import re
 from typing import List, Optional
 
-# Structure codes in gold/predictions: xIe, xPRy, rDy, etc.
-_STRUCTURE_CODE_RE = re.compile(r"\b([xrgocv][A-Za-z]+)\b")
+# Structure codes in gold/predictions: xIe, xPRy, rDy, xP(e)y, g(H+I)y, "xDpl, pro".
+# A code is a subject symbol followed by letters and/or parenthesised groups, with an
+# optional trailing qualifier. The parenthesised and comma parts matter: without them
+# "xDpl, pro" (Procedures) truncates to "xDpl" (Place) and the two become
+# indistinguishable at scoring, and "xP(e)" / "xP(e)y" both collapse to "xP".
+# The second symbol is always uppercase (I, D, C, P, F, S) or a parenthesised group,
+# which is what stops ordinary words ("code", "changed") from matching as codes.
+_GROUP = r"(?:[A-Za-z]|\([A-Za-z+]+\))"
+_STRUCTURE_CODE_RE = re.compile(
+    rf"\b([xrgocv](?:[A-Z]|\([A-Za-z+]+\)){_GROUP}*(?:\s*,\s*[a-z]+)?)"
+)
 
 
 def normalize_string(text: str) -> str:
@@ -28,7 +37,8 @@ def extract_structure_code(text: str) -> str:
     text = text.strip()
     match = _STRUCTURE_CODE_RE.search(text)
     if match:
-        return match.group(1)
+        # normalize_string so the regex and fallback paths agree on case/spacing
+        return normalize_string(match.group(1))
     return normalize_string(text)
 
 

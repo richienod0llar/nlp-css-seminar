@@ -524,7 +524,17 @@ def fig12_self_vs_external_judge(ext_report_path: Path, out_dir: Path) -> None:
     ax.set_xticklabels(labels)
     ax.set_ylim(3.5, 5.15)
     ax.axhline(4, color="#cccccc", linestyle="--", linewidth=0.8)
-    ax.legend(frameon=False, loc="lower right")
+    ax.legend(
+        frameon=True,
+        fancybox=False,
+        edgecolor="#dddddd",
+        framealpha=0.95,
+        loc="upper left",
+        fontsize=6.5,
+        borderpad=0.3,
+        handlelength=1.2,
+        labelspacing=0.25,
+    )
     for bars in (bars_self, bars_ext):
         for bar in bars:
             ax.text(
