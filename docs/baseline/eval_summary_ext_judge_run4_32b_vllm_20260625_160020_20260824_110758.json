@@ -1,0 +1,9 @@
+{
+  "source_report": "docs/baseline/eval_report_vllm_20260625_160020.csv",
+  "judge_model": "/dss/dssmcmlfs01/pn25ju/pn25ju-dss-0000/models/Qwen3-32B",
+  "total_rows": 115,
+  "mean_ext_indicator_assertion_score": 4.5,
+  "mean_ext_assertion_question_score": 4.95,
+  "mean_self_indicator_assertion_score": 4.51,
+  "mean_self_assertion_question_score": 4.99
+}

@@ -1,0 +1,16 @@
+gold_concept,pred_concept,count
+Cognitive judgment,Events,2
+Events,Feelings,2
+Action tendencies,Values,1
+Behavior,Demographics,1
+Behavior,Procedures,1
+Demographics,Feelings,1
+Demographics,Place,1
+Evaluation,Action tendencies,1
+Evaluation,Preference,1
+Events,Demographics,1
+Feelings,Evaluation,1
+Policies,Events,1
+Preference,Evaluation,1
+Preference,Feelings,1
+Procedures,Demographics,1

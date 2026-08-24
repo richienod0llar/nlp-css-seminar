@@ -57,11 +57,20 @@ C_BOTH = "#029E73"
 C_QUESTION = "#CC78BC"
 C_NEUTRAL = "#949494"
 
+# Qwen2.5-72B-Instruct was deleted from the shared model store after Run 5, so
+# every external-judge figure from Run 7 on is produced by Qwen3-32B. Keep the
+# name in one place: silently relabelling a changed instrument is how figures
+# start lying.
+EXT_JUDGE_NAME = "Qwen3-32B"
+
 RUN_LABELS = {
     "20260620_185119": "Run 1\n(Initial)",
-    "20260620_194152": "Run 2\n(Prompt tuning)",
-    "20260625_134833": "Run 3\n(Structure v1)",
-    "20260703_180434": "Run 6\n(Structure v2)",
+    "20260620_194152": "Run 2\n(Prompt)",
+    "20260625_134833": "Run 3\n(Struct v1)",
+    "20260703_180434": "Run 6\n(Struct v2)",
+    "v6repro_20260824_101855": "Run 7a\n(YAML fix)",
+    "v7a_20260824_102619": "Run 7b\n(De-leaked)",
+    "v7b_20260824_103350": "Run 7c\n(+Notation)",
 }
 
 RUN_ORDER = [
@@ -69,6 +78,9 @@ RUN_ORDER = [
     "20260620_194152",
     "20260625_134833",
     "20260703_180434",
+    "v6repro_20260824_101855",
+    "v7a_20260824_102619",
+    "v7b_20260824_103350",
 ]
 
 
@@ -121,7 +133,9 @@ def fig01_run_progression(summary_df: pd.DataFrame, out_dir: Path) -> None:
     ]
     x = np.arange(len(summary_df))
     width = 0.24
-    fig, ax = plt.subplots(figsize=(6.5, 3.5))
+    # Sized for four runs originally; Run 7 adds three arms, so grow the canvas
+    # rather than letting the tick labels overlap.
+    fig, ax = plt.subplots(figsize=(6.5 + 0.85 * max(0, len(summary_df) - 4), 3.5))
     for i, (col, label, color) in enumerate(metrics):
         offset = (i - 1) * width
         bars = ax.bar(
@@ -141,13 +155,13 @@ def fig01_run_progression(summary_df: pd.DataFrame, out_dir: Path) -> None:
                 f"{h:.0f}%",
                 ha="center",
                 va="bottom",
-                fontsize=7,
+                fontsize=6,
             )
     ax.set_ylabel("Accuracy (%)")
     ax.set_xlabel("Evaluation run")
     ax.set_title("Assertion stage accuracy across prompt-engineering runs")
     ax.set_xticks(x)
-    ax.set_xticklabels(summary_df["label"])
+    ax.set_xticklabels(summary_df["label"], fontsize=8)
     ax.set_ylim(0, 95)
     ax.legend(loc="upper left", frameon=False, ncol=3)
     ax.axhline(50, color=C_NEUTRAL, linestyle="--", linewidth=0.8, alpha=0.6, zorder=0)
@@ -496,7 +510,7 @@ def fig10_ia_by_concept_correctness(report_path: Path, out_dir: Path) -> None:
 
 
 def fig12_self_vs_external_judge(ext_report_path: Path, out_dir: Path) -> None:
-    """Compare self-judge (9B) vs external judge (72B) mean alignment scores."""
+    """Compare self-judge (9B) vs external judge mean alignment scores."""
     df = pd.read_csv(ext_report_path)
     required = {
         "indicator_assertion_score",
@@ -517,7 +531,7 @@ def fig12_self_vs_external_judge(ext_report_path: Path, out_dir: Path) -> None:
     width = 0.34
     fig, ax = plt.subplots(figsize=(5.2, 3.6))
     bars_self = ax.bar(x - width / 2, self_means, width, label="Self (Qwen3.5-9B)", color=C_NEUTRAL)
-    bars_ext = ax.bar(x + width / 2, ext_means, width, label="External (Qwen2.5-72B)", color=C_CONCEPT)
+    bars_ext = ax.bar(x + width / 2, ext_means, width, label=f"External ({EXT_JUDGE_NAME})", color=C_CONCEPT)
     ax.set_ylabel("Mean judge score (1–5)")
     ax.set_title("Self-judge vs external judge (Run 5)")
     ax.set_xticks(x)
@@ -548,14 +562,14 @@ def fig12_self_vs_external_judge(ext_report_path: Path, out_dir: Path) -> None:
 
 
 def fig13_ext_judge_distributions(ext_report_path: Path, out_dir: Path) -> None:
-    """Histogram of external (72B) judge alignment scores."""
+    """Histogram of external judge alignment scores."""
     df = pd.read_csv(ext_report_path)
     if "ext_indicator_assertion_score" not in df.columns:
         return
     fig, axes = plt.subplots(1, 2, figsize=(6.5, 3.2), sharey=True)
     for ax, col, title, color in [
-        (axes[0], "ext_indicator_assertion_score", "Indicator → assertion (72B)", C_CONCEPT),
-        (axes[1], "ext_assertion_question_score", "Assertion → question (72B)", C_QUESTION),
+        (axes[0], "ext_indicator_assertion_score", f"Indicator → assertion ({EXT_JUDGE_NAME})", C_CONCEPT),
+        (axes[1], "ext_assertion_question_score", f"Assertion → question ({EXT_JUDGE_NAME})", C_QUESTION),
     ]:
         counts = df[col].dropna().astype(int).value_counts().sort_index()
         scores = list(range(1, 6))
@@ -572,7 +586,7 @@ def fig13_ext_judge_distributions(ext_report_path: Path, out_dir: Path) -> None:
         ax.set_xlim(0.5, 5.5)
         ax.legend(loc="upper left", frameon=False, fontsize=7)
     axes[0].set_ylabel("Number of rows (n=115)")
-    fig.suptitle("External judge (Qwen2.5-72B) score distributions", fontweight="bold", y=1.02)
+    fig.suptitle(f"External judge ({EXT_JUDGE_NAME}) score distributions", fontweight="bold", y=1.02)
     fig.tight_layout()
     _save(fig, out_dir, "fig13_ext_judge_distributions")
 
@@ -593,7 +607,7 @@ def fig14_exact_match_vs_ext_judge(ext_report_path: Path, out_dir: Path) -> None
     fig.subplots_adjust(left=0.13, right=0.97, top=0.88, bottom=0.13)
     bars = ax.bar(labels, values, color=colors, edgecolor="white", linewidth=0.5, width=0.62)
     ax.set_ylabel("Rate (%)  ·  mean score ×20")
-    ax.set_title("Question quality: exact match vs external judge (72B)")
+    ax.set_title(f"Question quality: exact match vs external judge ({EXT_JUDGE_NAME})")
     ax.set_ylim(0, 112)
     for bar, disp, val in zip(bars, display, values):
         ax.text(bar.get_x() + bar.get_width() / 2, val + 2.5, disp, ha="center", fontsize=9)
@@ -643,7 +657,7 @@ Generated by `python scripts/generate_figures.py`. Use **PDF** versions in manus
 | `fig09_exact_match_vs_judge` | Discussion | Why exact string match (18%) understates question quality (99% judge ≥4). |
 | `fig10_ia_by_concept_correctness` | Discussion | Judge scores when concept label is correct vs incorrect. |
 | `fig11_mean_ia_by_concept` | Appendix | Mean assertion alignment score by gold basic concept. |
-| `fig12_self_vs_external_judge` | Results (Run 5) | Mean self-judge (9B) vs external judge (72B) scores. |
+| `fig12_self_vs_external_judge` | Results (Run 5/7) | Mean self-judge (9B) vs external judge (Qwen3-32B) scores. |
 | `fig13_ext_judge_distributions` | Results (Run 5) | External judge score histograms for IA and AQ. |
 | `fig14_exact_match_vs_ext_judge` | Discussion (Run 5) | Exact match vs external judge on question quality. |
 
@@ -667,7 +681,7 @@ def main() -> None:
     parser.add_argument("--out-dir", type=Path, default=ROOT / "docs" / "figures")
     parser.add_argument(
         "--run-id",
-        default="20260703_180434",
+        default="v7b_20260824_103350",
         help="Run ID for detailed figures (Run 6 default); judge figs use Run 4 report",
     )
     parser.add_argument(
@@ -678,7 +692,7 @@ def main() -> None:
     parser.add_argument(
         "--ext-judge-report",
         type=Path,
-        default=ROOT / "docs" / "baseline" / "eval_report_ext_judge_20260703_171851.csv",
+        default=ROOT / "docs" / "baseline" / "eval_report_ext_judge_run4_32b_vllm_20260625_160020_20260824_110758.csv",
         help="Run 5 external judge report CSV (self + ext columns)",
     )
     args = parser.parse_args()

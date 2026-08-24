@@ -1,0 +1,7 @@
+{
+  "source_report": "outputs/eval_report_vllm_gen32b_20260824_113423.csv",
+  "judge_model": "/dss/dssmcmlfs01/pn25ju/pn25ju-dss-0000/models/Qwen3-32B",
+  "total_rows": 115,
+  "mean_ext_indicator_assertion_score": 4.38,
+  "mean_ext_assertion_question_score": 4.95
+}

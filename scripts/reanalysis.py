@@ -29,14 +29,44 @@ ROOT = Path(__file__).resolve().parents[1]
 BASELINE = ROOT / "docs" / "baseline"
 
 # Run label -> per-item report CSV. Runs 4 and 5 reuse Run 3 generations (judge-only passes).
+# The v* arms are Run 7 (2026-08-24): one intervention each, so consecutive
+# McNemar tests isolate the YAML repair, the de-leaking, and the notation rule.
 RUNS = {
     "Run 1": BASELINE / "eval_report_vllm_20260620_185119.csv",
     "Run 2": BASELINE / "eval_report_vllm_20260620_194152.csv",
     "Run 3": BASELINE / "eval_report_vllm_20260625_134833.csv",
     "Run 6": BASELINE / "eval_report_vllm_20260703_180434.csv",
+    "v6repro": BASELINE / "eval_report_vllm_v6repro_20260824_101855.csv",
+    "v7a": BASELINE / "eval_report_vllm_v7a_20260824_102619.csv",
+    "v7b": BASELINE / "eval_report_vllm_v7b_20260824_103350.csv",
 }
-EXT_JUDGE = BASELINE / "eval_report_ext_judge_20260703_171851.csv"
-BEST = "Run 6"
+
+# Each arm was generated under a DIFFERENT prompt, so the leakage split has to
+# be computed against the prompt that actually produced the run. De-leaking the
+# worked examples is the whole point of v7a; scoring it against the v6 prompt
+# would report leakage that is no longer there.
+RUN_PROMPTS = {
+    "v7a": "assertion_developer_v7a.md",
+    "v7b": "assertion_developer_v7b.md",
+}
+DEFAULT_PROMPT = "assertion_developer.md"
+
+# Qwen2.5-72B-Instruct was deleted from the shared model store after Run 5, so
+# Run 7 re-judged the SAME Run 4 predictions with Qwen3-32B. Keeping both makes
+# the judge swap itself measurable instead of a silent change of instrument.
+EXT_JUDGE = BASELINE / "eval_report_ext_judge_run4_32b_vllm_20260625_160020_20260824_110758.csv"
+EXT_JUDGE_OLD = BASELINE / "eval_report_ext_judge_20260703_171851.csv"
+
+# W3, the 2x2: generator x judge on the same 115 items. Separates "a model
+# prefers its own output" from "a bigger judge is simply stricter".
+JUDGE_2X2 = {
+    ("gen9b", "judge32b"): BASELINE / "eval_report_ext_judge_v7b_vllm_v7b_20260824_103350_20260824_112633.csv",
+    ("gen9b", "judge9b"): BASELINE / "eval_report_ext_judge_j9b_on_gen9b_vllm_v7b_20260824_103350_20260824_115228.csv",
+    ("gen32b", "judge32b"): BASELINE / "eval_report_ext_judge_j32b_on_gen32b_vllm_gen32b_20260824_113423_20260824_114348.csv",
+    ("gen32b", "judge9b"): BASELINE / "eval_report_ext_judge_j9b_on_gen32b_vllm_gen32b_20260824_113423_20260824_120021.csv",
+}
+GEN32B = BASELINE / "eval_report_vllm_gen32b_20260824_113423.csv"
+BEST = "v7b"
 
 
 # --------------------------------------------------------------------------
@@ -82,9 +112,9 @@ def _key(text: str) -> str:
     return re.sub(r"\W+", "", str(text).lower())
 
 
-def fewshot_gold_ids(gold: pd.DataFrame) -> list[int]:
+def fewshot_gold_ids(gold: pd.DataFrame, prompt_name: str = DEFAULT_PROMPT) -> list[int]:
     """Gold example_ids whose indicator appears verbatim as a worked example."""
-    prompt = (ROOT / "src" / "sig" / "prompts" / "assertion_developer.md").read_text(encoding="utf-8")
+    prompt = (ROOT / "src" / "sig" / "prompts" / prompt_name).read_text(encoding="utf-8")
     quoted = {_key(m) for m in re.findall(r"Input Indicator:\n(.+)", prompt)}
     return sorted(int(r.example_id) for r in gold.itertuples() if _key(r.input_indicator) in quoted)
 
@@ -167,8 +197,28 @@ def main() -> None:
     valid_concepts = sorted(set(gold["basic_concept"]))
     runs = {label: pd.read_csv(path) for label, path in RUNS.items() if path.exists()}
     best = runs[BEST]
-    leak_ids = fewshot_gold_ids(gold)
-    report: dict = {"fewshot_gold_ids": leak_ids}
+    leak_ids = fewshot_gold_ids(gold, RUN_PROMPTS.get(BEST, DEFAULT_PROMPT))
+    report: dict = {"fewshot_gold_ids": leak_ids, "best_run": BEST}
+
+    # --- W1: how much leakage does each arm's own prompt carry? ------------
+    report["leakage_by_arm"] = {}
+    for label in ("v6repro", "v7a", "v7b"):
+        if label not in runs:
+            continue
+        ids = fewshot_gold_ids(gold, RUN_PROMPTS.get(label, DEFAULT_PROMPT))
+        df = runs[label]
+        seen_arm = df["example_id"].isin(ids)
+        report["leakage_by_arm"][label] = {
+            "prompt": RUN_PROMPTS.get(label, DEFAULT_PROMPT),
+            "n_leaked_gold_items": len(ids),
+            "leaked_ids": ids,
+            "concept_in_prompt": rate(df.loc[seen_arm, "concept_accuracy"]) if seen_arm.any() else None,
+            "concept_held_out": rate(df.loc[~seen_arm, "concept_accuracy"]),
+            "both_in_prompt": rate(df.loc[seen_arm, "concept_accuracy"].astype(bool)
+                                   & df.loc[seen_arm, "structure_accuracy"].astype(bool)) if seen_arm.any() else None,
+            "both_held_out": rate(df.loc[~seen_arm, "concept_accuracy"].astype(bool)
+                                  & df.loc[~seen_arm, "structure_accuracy"].astype(bool)),
+        }
 
     # --- W1: leakage split -------------------------------------------------
     seen = best["example_id"].isin(leak_ids)
@@ -263,6 +313,74 @@ def main() -> None:
             ),
         }
 
+    # --- W3: the 2x2, generator x judge ------------------------------------
+    cells = {}
+    for (gen, judge), path in JUDGE_2X2.items():
+        if not path.exists():
+            continue
+        df = pd.read_csv(path)
+        ia = pd.to_numeric(df["ext_indicator_assertion_score"], errors="coerce").dropna()
+        aq = pd.to_numeric(df["ext_assertion_question_score"], errors="coerce").dropna()
+        cells[f"{gen}/{judge}"] = {
+            "mean_ia": round(ia.mean(), 2),
+            "mean_aq": round(aq.mean(), 2),
+            # A judge that cannot return a parseable score is itself a finding.
+            "n_scored_ia": int(len(ia)),
+            "n_rows": int(len(df)),
+            "ia_distribution": {str(k): int(v) for k, v in sorted(ia.round().astype(int).value_counts().items())},
+            "distinct_ia_values": int(ia.round().nunique()),
+        }
+    if cells:
+        report["judge_2x2"] = cells
+        def _m(key):
+            return cells[key]["mean_ia"] if key in cells else None
+        # Self-preference would show as each judge scoring ITS OWN generator
+        # higher. A pure judge main effect shows as both columns shifting together.
+        report["judge_effects"] = {
+            "self_preference_9b": None if None in (_m("gen9b/judge9b"), _m("gen32b/judge9b"))
+                else round(_m("gen9b/judge9b") - _m("gen32b/judge9b"), 2),
+            "self_preference_32b": None if None in (_m("gen32b/judge32b"), _m("gen9b/judge32b"))
+                else round(_m("gen32b/judge32b") - _m("gen9b/judge32b"), 2),
+            "judge_leniency_9b_minus_32b_on_gen9b": None if None in (_m("gen9b/judge9b"), _m("gen9b/judge32b"))
+                else round(_m("gen9b/judge9b") - _m("gen9b/judge32b"), 2),
+        }
+
+    # --- W3: did swapping the judge model change the instrument? -----------
+    if EXT_JUDGE.exists() and EXT_JUDGE_OLD.exists():
+        swap = {}
+        for name, path in (("qwen3_32b", EXT_JUDGE), ("qwen2.5_72b", EXT_JUDGE_OLD)):
+            df = pd.read_csv(path)
+            ia = pd.to_numeric(df["ext_indicator_assertion_score"], errors="coerce").dropna()
+            swap[name] = {
+                "mean_ia": round(ia.mean(), 2),
+                "ia_distribution": {str(k): int(v) for k, v in sorted(ia.round().astype(int).value_counts().items())},
+                "distinct_ia_values": int(ia.round().nunique()),
+            }
+        swap["note"] = ("Same 115 Run 4 predictions under both judges. The 32B is the more "
+                        "lenient instrument; the gap cannot be decomposed because the 72B "
+                        "is no longer available.")
+        report["judge_swap"] = swap
+
+    # --- generator comparison: does a bigger GENERATOR help? ---------------
+    if GEN32B.exists() and "v7b" in runs:
+        g32 = pd.read_csv(GEN32B)
+        report["generator_comparison"] = {
+            "gen9b_v7b": {
+                "concept": rate(runs["v7b"]["concept_accuracy"]),
+                "structure": rate(runs["v7b"]["structure_accuracy"]),
+                "both": rate(runs["v7b"]["concept_accuracy"].astype(bool) & runs["v7b"]["structure_accuracy"].astype(bool)),
+            },
+            "gen32b_v7b": {
+                "concept": rate(g32["concept_accuracy"]),
+                "structure": rate(g32["structure_accuracy"]),
+                "both": rate(g32["concept_accuracy"].astype(bool) & g32["structure_accuracy"].astype(bool)),
+            },
+            "mcnemar_concept": mcnemar_exact(
+                runs["v7b"].set_index("example_id")["concept_accuracy"].astype(bool),
+                g32.set_index("example_id")["concept_accuracy"].astype(bool),
+            ),
+        }
+
     # --- W8: options + format ----------------------------------------------
     gold_by_id = gold.set_index("example_id")
     gold_types = best["example_id"].map(lambda i: option_type(gold_by_id.loc[i, "answer_options"]))
@@ -282,16 +400,47 @@ def main() -> None:
     out.write_text(json.dumps(report, indent=2, default=str), encoding="utf-8")
 
     ls = report["leakage_split"]
-    print(f"Few-shot gold items quoted in the prompt: {len(leak_ids)} -> {leak_ids}")
+    print(f"Best run: {BEST}  (prompt {RUN_PROMPTS.get(BEST, DEFAULT_PROMPT)})")
+    print(f"Few-shot gold items quoted in that prompt: {len(leak_ids)} -> {leak_ids}")
     print(f"  all 115      concept {ls['all']['concept']['pct']}%  CI {ls['all']['concept']['ci95']}")
-    print(f"  in prompt    concept {ls['in_prompt']['concept']['pct']}%  (n={ls['in_prompt']['concept']['n']})")
-    print(f"  held out     concept {ls['held_out']['concept']['pct']}%  CI {ls['held_out']['concept']['ci95']}")
+    if leak_ids:
+        print(f"  in prompt    concept {ls['in_prompt']['concept']['pct']}%  (n={ls['in_prompt']['concept']['n']})")
+        print(f"  held out     concept {ls['held_out']['concept']['pct']}%  CI {ls['held_out']['concept']['ci95']}")
+    else:
+        print("  (prompt is de-leaked: no gold item appears verbatim, so there is no split)")
+    leaky = report.get("leakage_by_arm", {}).get("v6repro")
+    if leaky and leaky["concept_in_prompt"]:
+        print(f"  leaked-prompt arm v6repro: in-prompt {leaky['concept_in_prompt']['pct']}% "
+              f"(n={leaky['concept_in_prompt']['n']}) vs held-out {leaky['concept_held_out']['pct']}% "
+              f"(n={leaky['concept_held_out']['n']})")
     cs = report["conditional_structure"]
     print(f"P(structure | concept correct) = {cs['given_concept_correct']['pct']}%  "
           f"vs {cs['given_concept_wrong']['pct']}% when wrong")
     b = report["baselines"]
     print(f"Baselines: majority {b['majority_class']['pct']}%  lexical-1NN {b['lexical_1nn_concept']['pct']}%")
     print(f"Answer-option type agreement: {report['answer_options']['response_type_agreement']['pct']}%")
+
+    if "leakage_by_arm" in report:
+        print("\nLeakage carried by each arm's own prompt:")
+        for label, d in report["leakage_by_arm"].items():
+            print(f"  {label:<9} {d['n_leaked_gold_items']:>2} leaked gold items "
+                  f"({d['prompt']})")
+    if "judge_2x2" in report:
+        print("\n2x2 generator x judge (mean indicator->assertion):")
+        for cell, d in report["judge_2x2"].items():
+            print(f"  {cell:<18} {d['mean_ia']:>5}   scored {d['n_scored_ia']}/{d['n_rows']}"
+                  f"   dist {d['ia_distribution']}")
+        for k, v in report["judge_effects"].items():
+            print(f"  {k}: {v:+}" if v is not None else f"  {k}: n/a")
+    if "judge_swap" in report:
+        print("\nJudge swap on identical Run 4 predictions:")
+        for name in ("qwen2.5_72b", "qwen3_32b"):
+            d = report["judge_swap"][name]
+            print(f"  {name:<12} mean {d['mean_ia']}   dist {d['ia_distribution']}")
+    if "generator_comparison" in report:
+        gc = report["generator_comparison"]
+        print(f"\nGenerator: 9B {gc['gen9b_v7b']['both']['pct']}% both-correct "
+              f"vs 32B {gc['gen32b_v7b']['both']['pct']}%  (McNemar p={gc['mcnemar_concept']['p']})")
     print(f"\nWrote {out}")
 
 

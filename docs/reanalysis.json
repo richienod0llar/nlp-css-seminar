@@ -1,54 +1,29 @@
 {
-  "fewshot_gold_ids": [
-    1,
-    3,
-    5,
-    6,
-    7,
-    9,
-    47,
-    49,
-    55,
-    65,
-    71,
-    95,
-    101,
-    103,
-    113,
-    115
-  ],
-  "leakage_split": {
-    "all": {
-      "concept": {
-        "pct": 76.5,
-        "k": 88,
-        "n": 115,
-        "ci95": [
-          68.0,
-          83.3
-        ]
-      },
-      "structure": {
-        "pct": 75.7,
-        "k": 87,
-        "n": 115,
-        "ci95": [
-          67.1,
-          82.6
-        ]
-      },
-      "both": {
-        "pct": 73.9,
-        "k": 85,
-        "n": 115,
-        "ci95": [
-          65.2,
-          81.1
-        ]
-      }
-    },
-    "in_prompt": {
-      "concept": {
+  "fewshot_gold_ids": [],
+  "best_run": "v7b",
+  "leakage_by_arm": {
+    "v6repro": {
+      "prompt": "assertion_developer.md",
+      "n_leaked_gold_items": 16,
+      "leaked_ids": [
+        1,
+        3,
+        5,
+        6,
+        7,
+        9,
+        47,
+        49,
+        55,
+        65,
+        71,
+        95,
+        101,
+        103,
+        113,
+        115
+      ],
+      "concept_in_prompt": {
         "pct": 100.0,
         "k": 16,
         "n": 16,
@@ -57,36 +32,25 @@
           100.0
         ]
       },
-      "structure": {
-        "pct": 100.0,
-        "k": 16,
-        "n": 16,
-        "ci95": [
-          80.6,
-          100.0
-        ]
-      },
-      "both": {
-        "pct": 100.0,
-        "k": 16,
-        "n": 16,
-        "ci95": [
-          80.6,
-          100.0
-        ]
-      }
-    },
-    "held_out": {
-      "concept": {
-        "pct": 72.7,
-        "k": 72,
+      "concept_held_out": {
+        "pct": 75.8,
+        "k": 75,
         "n": 99,
         "ci95": [
-          63.2,
-          80.5
+          66.5,
+          83.1
         ]
       },
-      "structure": {
+      "both_in_prompt": {
+        "pct": 100.0,
+        "k": 16,
+        "n": 16,
+        "ci95": [
+          80.6,
+          100.0
+        ]
+      },
+      "both_held_out": {
         "pct": 71.7,
         "k": 71,
         "n": 99,
@@ -94,35 +58,165 @@
           62.2,
           79.6
         ]
+      }
+    },
+    "v7a": {
+      "prompt": "assertion_developer_v7a.md",
+      "n_leaked_gold_items": 0,
+      "leaked_ids": [],
+      "concept_in_prompt": null,
+      "concept_held_out": {
+        "pct": 78.3,
+        "k": 90,
+        "n": 115,
+        "ci95": [
+          69.9,
+          84.8
+        ]
+      },
+      "both_in_prompt": null,
+      "both_held_out": {
+        "pct": 73.0,
+        "k": 84,
+        "n": 115,
+        "ci95": [
+          64.3,
+          80.3
+        ]
+      }
+    },
+    "v7b": {
+      "prompt": "assertion_developer_v7b.md",
+      "n_leaked_gold_items": 0,
+      "leaked_ids": [],
+      "concept_in_prompt": null,
+      "concept_held_out": {
+        "pct": 85.2,
+        "k": 98,
+        "n": 115,
+        "ci95": [
+          77.6,
+          90.6
+        ]
+      },
+      "both_in_prompt": null,
+      "both_held_out": {
+        "pct": 80.9,
+        "k": 93,
+        "n": 115,
+        "ci95": [
+          72.7,
+          87.0
+        ]
+      }
+    }
+  },
+  "leakage_split": {
+    "all": {
+      "concept": {
+        "pct": 85.2,
+        "k": 98,
+        "n": 115,
+        "ci95": [
+          77.6,
+          90.6
+        ]
+      },
+      "structure": {
+        "pct": 80.9,
+        "k": 93,
+        "n": 115,
+        "ci95": [
+          72.7,
+          87.0
+        ]
       },
       "both": {
-        "pct": 69.7,
-        "k": 69,
-        "n": 99,
+        "pct": 80.9,
+        "k": 93,
+        "n": 115,
         "ci95": [
-          60.0,
-          77.9
+          72.7,
+          87.0
+        ]
+      }
+    },
+    "in_prompt": {
+      "concept": {
+        "pct": NaN,
+        "k": 0,
+        "n": 0,
+        "ci95": [
+          0.0,
+          0.0
+        ]
+      },
+      "structure": {
+        "pct": NaN,
+        "k": 0,
+        "n": 0,
+        "ci95": [
+          0.0,
+          0.0
+        ]
+      },
+      "both": {
+        "pct": NaN,
+        "k": 0,
+        "n": 0,
+        "ci95": [
+          0.0,
+          0.0
+        ]
+      }
+    },
+    "held_out": {
+      "concept": {
+        "pct": 85.2,
+        "k": 98,
+        "n": 115,
+        "ci95": [
+          77.6,
+          90.6
+        ]
+      },
+      "structure": {
+        "pct": 80.9,
+        "k": 93,
+        "n": 115,
+        "ci95": [
+          72.7,
+          87.0
+        ]
+      },
+      "both": {
+        "pct": 80.9,
+        "k": 93,
+        "n": 115,
+        "ci95": [
+          72.7,
+          87.0
         ]
       }
     }
   },
   "conditional_structure": {
     "given_concept_correct": {
-      "pct": 96.6,
-      "k": 85,
-      "n": 88,
+      "pct": 94.9,
+      "k": 93,
+      "n": 98,
       "ci95": [
-        90.5,
-        98.8
+        88.6,
+        97.8
       ]
     },
     "given_concept_wrong": {
-      "pct": 7.4,
-      "k": 2,
-      "n": 27,
+      "pct": 0.0,
+      "k": 0,
+      "n": 17,
       "ci95": [
-        2.1,
-        23.4
+        0.0,
+        18.4
       ]
     }
   },
@@ -278,6 +372,120 @@
           25.3
         ]
       }
+    },
+    "v6repro": {
+      "concept": {
+        "pct": 79.1,
+        "k": 91,
+        "n": 115,
+        "ci95": [
+          70.8,
+          85.6
+        ]
+      },
+      "structure": {
+        "pct": 77.4,
+        "k": 89,
+        "n": 115,
+        "ci95": [
+          68.9,
+          84.1
+        ]
+      },
+      "both": {
+        "pct": 75.7,
+        "k": 87,
+        "n": 115,
+        "ci95": [
+          67.1,
+          82.6
+        ]
+      },
+      "question_exact_match": {
+        "pct": 20.0,
+        "k": 23,
+        "n": 115,
+        "ci95": [
+          13.7,
+          28.2
+        ]
+      }
+    },
+    "v7a": {
+      "concept": {
+        "pct": 78.3,
+        "k": 90,
+        "n": 115,
+        "ci95": [
+          69.9,
+          84.8
+        ]
+      },
+      "structure": {
+        "pct": 74.8,
+        "k": 86,
+        "n": 115,
+        "ci95": [
+          66.1,
+          81.8
+        ]
+      },
+      "both": {
+        "pct": 73.0,
+        "k": 84,
+        "n": 115,
+        "ci95": [
+          64.3,
+          80.3
+        ]
+      },
+      "question_exact_match": {
+        "pct": 20.0,
+        "k": 23,
+        "n": 115,
+        "ci95": [
+          13.7,
+          28.2
+        ]
+      }
+    },
+    "v7b": {
+      "concept": {
+        "pct": 85.2,
+        "k": 98,
+        "n": 115,
+        "ci95": [
+          77.6,
+          90.6
+        ]
+      },
+      "structure": {
+        "pct": 80.9,
+        "k": 93,
+        "n": 115,
+        "ci95": [
+          72.7,
+          87.0
+        ]
+      },
+      "both": {
+        "pct": 80.9,
+        "k": 93,
+        "n": 115,
+        "ci95": [
+          72.7,
+          87.0
+        ]
+      },
+      "question_exact_match": {
+        "pct": 20.0,
+        "k": 23,
+        "n": 115,
+        "ci95": [
+          13.7,
+          28.2
+        ]
+      }
     }
   },
   "mcnemar": {
@@ -316,6 +524,42 @@
         "c": 27,
         "p": 0.0237
       }
+    },
+    "Run 6 -> v6repro": {
+      "concept_accuracy": {
+        "b": 0,
+        "c": 3,
+        "p": 0.25
+      },
+      "structure_accuracy": {
+        "b": 1,
+        "c": 3,
+        "p": 0.625
+      }
+    },
+    "v6repro -> v7a": {
+      "concept_accuracy": {
+        "b": 2,
+        "c": 1,
+        "p": 1.0
+      },
+      "structure_accuracy": {
+        "b": 4,
+        "c": 1,
+        "p": 0.375
+      }
+    },
+    "v7a -> v7b": {
+      "concept_accuracy": {
+        "b": 2,
+        "c": 10,
+        "p": 0.0386
+      },
+      "structure_accuracy": {
+        "b": 2,
+        "c": 9,
+        "p": 0.0654
+      }
     }
   },
   "per_concept": {
@@ -331,7 +575,7 @@
     "Behavior": {
       "n": 7,
       "concept": "5/7",
-      "structure": "5/7",
+      "structure": "4/7",
       "concept_ci95": [
         35.9,
         91.8
@@ -339,11 +583,11 @@
     },
     "Causal relationship": {
       "n": 3,
-      "concept": "1/3",
-      "structure": "1/3",
+      "concept": "3/3",
+      "structure": "3/3",
       "concept_ci95": [
-        6.1,
-        79.2
+        43.8,
+        100.0
       ]
     },
     "Cognitive judgment": {
@@ -357,38 +601,38 @@
     },
     "Demographics": {
       "n": 15,
-      "concept": "12/15",
-      "structure": "12/15",
+      "concept": "13/15",
+      "structure": "13/15",
       "concept_ci95": [
-        54.8,
-        93.0
+        62.1,
+        96.3
       ]
     },
     "Evaluation": {
       "n": 20,
-      "concept": "16/20",
-      "structure": "16/20",
+      "concept": "18/20",
+      "structure": "18/20",
       "concept_ci95": [
-        58.4,
-        91.9
+        69.9,
+        97.2
       ]
     },
     "Evaluative belief": {
       "n": 3,
-      "concept": "2/3",
+      "concept": "3/3",
       "structure": "1/3",
       "concept_ci95": [
-        20.8,
-        93.9
+        43.8,
+        100.0
       ]
     },
     "Events": {
       "n": 5,
-      "concept": "3/5",
-      "structure": "3/5",
+      "concept": "2/5",
+      "structure": "2/5",
       "concept_ci95": [
-        23.1,
-        88.2
+        11.8,
+        76.9
       ]
     },
     "Expectations of future events": {
@@ -429,11 +673,11 @@
     },
     "Norms": {
       "n": 3,
-      "concept": "0/3",
-      "structure": "0/3",
+      "concept": "3/3",
+      "structure": "3/3",
       "concept_ci95": [
-        0.0,
-        56.2
+        43.8,
+        100.0
       ]
     },
     "Place": {
@@ -447,11 +691,11 @@
     },
     "Policies": {
       "n": 3,
-      "concept": "0/3",
+      "concept": "2/3",
       "structure": "2/3",
       "concept_ci95": [
-        0.0,
-        56.2
+        20.8,
+        93.9
       ]
     },
     "Preference": {
@@ -572,20 +816,168 @@
   },
   "judge": {
     "mean_self_ia": 4.51,
-    "mean_ext_ia": 4.09,
-    "pearson_r_ia": 0.52,
-    "exact_agreement_ia_pct": 40.9,
+    "mean_ext_ia": 4.5,
+    "pearson_r_ia": 0.559,
+    "exact_agreement_ia_pct": 60.0,
     "self_ia_gap_correct_minus_wrong": 0.39,
-    "ext_ia_gap_correct_minus_wrong": 0.26
+    "ext_ia_gap_correct_minus_wrong": 0.29
+  },
+  "judge_2x2": {
+    "gen9b/judge32b": {
+      "mean_ia": 4.43,
+      "mean_aq": 4.97,
+      "n_scored_ia": 115,
+      "n_rows": 115,
+      "ia_distribution": {
+        "2": 2,
+        "3": 15,
+        "4": 30,
+        "5": 68
+      },
+      "distinct_ia_values": 4
+    },
+    "gen9b/judge9b": {
+      "mean_ia": 4.49,
+      "mean_aq": 5.0,
+      "n_scored_ia": 112,
+      "n_rows": 115,
+      "ia_distribution": {
+        "1": 2,
+        "2": 16,
+        "4": 1,
+        "5": 93
+      },
+      "distinct_ia_values": 4
+    },
+    "gen32b/judge32b": {
+      "mean_ia": 4.38,
+      "mean_aq": 4.95,
+      "n_scored_ia": 115,
+      "n_rows": 115,
+      "ia_distribution": {
+        "2": 2,
+        "3": 14,
+        "4": 37,
+        "5": 62
+      },
+      "distinct_ia_values": 4
+    },
+    "gen32b/judge9b": {
+      "mean_ia": 4.5,
+      "mean_aq": 5.0,
+      "n_scored_ia": 114,
+      "n_rows": 115,
+      "ia_distribution": {
+        "1": 1,
+        "2": 17,
+        "3": 1,
+        "5": 95
+      },
+      "distinct_ia_values": 4
+    }
+  },
+  "judge_effects": {
+    "self_preference_9b": -0.01,
+    "self_preference_32b": -0.05,
+    "judge_leniency_9b_minus_32b_on_gen9b": 0.06
+  },
+  "judge_swap": {
+    "qwen3_32b": {
+      "mean_ia": 4.5,
+      "ia_distribution": {
+        "2": 1,
+        "3": 12,
+        "4": 30,
+        "5": 72
+      },
+      "distinct_ia_values": 4
+    },
+    "qwen2.5_72b": {
+      "mean_ia": 4.09,
+      "ia_distribution": {
+        "1": 1,
+        "2": 4,
+        "3": 22,
+        "4": 45,
+        "5": 43
+      },
+      "distinct_ia_values": 5
+    },
+    "note": "Same 115 Run 4 predictions under both judges. The 32B is the more lenient instrument; the gap cannot be decomposed because the 72B is no longer available."
+  },
+  "generator_comparison": {
+    "gen9b_v7b": {
+      "concept": {
+        "pct": 85.2,
+        "k": 98,
+        "n": 115,
+        "ci95": [
+          77.6,
+          90.6
+        ]
+      },
+      "structure": {
+        "pct": 80.9,
+        "k": 93,
+        "n": 115,
+        "ci95": [
+          72.7,
+          87.0
+        ]
+      },
+      "both": {
+        "pct": 80.9,
+        "k": 93,
+        "n": 115,
+        "ci95": [
+          72.7,
+          87.0
+        ]
+      }
+    },
+    "gen32b_v7b": {
+      "concept": {
+        "pct": 77.4,
+        "k": 89,
+        "n": 115,
+        "ci95": [
+          68.9,
+          84.1
+        ]
+      },
+      "structure": {
+        "pct": 69.6,
+        "k": 80,
+        "n": 115,
+        "ci95": [
+          60.6,
+          77.2
+        ]
+      },
+      "both": {
+        "pct": 69.6,
+        "k": 80,
+        "n": 115,
+        "ci95": [
+          60.6,
+          77.2
+        ]
+      }
+    },
+    "mcnemar_concept": {
+      "b": 14,
+      "c": 5,
+      "p": 0.0636
+    }
   },
   "answer_options": {
     "response_type_agreement": {
-      "pct": 60.9,
-      "k": 70,
+      "pct": 61.7,
+      "k": 71,
       "n": 115,
       "ci95": [
-        51.7,
-        69.3
+        52.6,
+        70.1
       ]
     },
     "gold_distribution": {
@@ -596,8 +988,8 @@
       "ranked": 2
     },
     "pred_distribution": {
-      "ordinal": 63,
-      "open": 40,
+      "ordinal": 65,
+      "open": 38,
       "nominal": 12
     }
   },

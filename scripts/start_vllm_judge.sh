@@ -1,6 +1,10 @@
 #!/bin/bash
-# Start vLLM server for Qwen2.5-72B-Instruct (external judge on port 8001).
-# Requires 2 GPUs (tensor parallelism). Run on LRZ H100 compute node.
+# Start vLLM server for Qwen3-32B (external judge on port 8001).
+# Requires 2 GPUs (tensor parallelism); 65.5 GB of bf16 weights split TP=2.
+# Run on LRZ H100 compute node. Set VLLM_JUDGE_TP=1 to fit it on a single 94 GB H100.
+#
+# Replaces Qwen2.5-72B-Instruct, which was deleted from the shared model store
+# after Run 5. Qwen3-32B is the largest complete instruct model still on disk.
 #
 # Usage: bash scripts/start_vllm_judge.sh
 #
@@ -14,7 +18,7 @@ conda activate sig-llm
 # shellcheck disable=SC1091
 source "$(dirname "${BASH_SOURCE[0]}")/setup_cuda_libs.sh"
 
-MODEL_PATH="/dss/dssmcmlfs01/pn25ju/pn25ju-dss-0000/models/Qwen2.5-72B-Instruct"
+MODEL_PATH="/dss/dssmcmlfs01/pn25ju/pn25ju-dss-0000/models/Qwen3-32B"
 PORT="${VLLM_JUDGE_PORT:-8001}"
 TP_SIZE="${VLLM_JUDGE_TP:-2}"
 
@@ -32,7 +36,7 @@ vllm serve "$MODEL_PATH" \
   --port "$PORT" \
   --dtype bfloat16 \
   --tensor-parallel-size "$TP_SIZE" \
-  --max-model-len 4096 \
+  --max-model-len 8192 \
   --gpu-memory-utilization 0.92 \
   --enforce-eager \
   --trust-remote-code \

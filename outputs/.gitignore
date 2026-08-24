@@ -2,3 +2,6 @@
 outputs/logs/
 eval_report_*.csv
 eval_summary_*.json
+concept_confusion_*.csv
+structure_confusion_*.csv
+eval_analysis_*.json

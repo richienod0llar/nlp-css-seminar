@@ -1,0 +1,21 @@
+gold_concept,pred_concept,count
+Causal relationship,Cognitive judgement,2
+Cognitive judgment,Events,2
+Norms,Values,2
+Policies,Norms,2
+Action tendencies,Preference,1
+Behavior,Demographics,1
+Behavior,Procedures,1
+Demographics,Feelings,1
+Demographics,Quantities,1
+Evaluation,Evaluative belief,1
+Evaluation,Feelings,1
+Evaluation,Preference,1
+Evaluation,Procedures,1
+Events,Demographics,1
+Events,Feelings,1
+Feelings,Evaluation,1
+Policies,Events,1
+Preference,Behaviour,1
+Preference,Feelings,1
+Procedures,Demographics,1

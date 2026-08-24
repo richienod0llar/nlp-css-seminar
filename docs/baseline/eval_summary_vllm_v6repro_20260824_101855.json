@@ -1,0 +1,222 @@
+{
+  "total_rows": 115,
+  "concept_accuracy_pct": 79.13,
+  "structure_accuracy_pct": 77.39,
+  "both_correct_pct": 75.65,
+  "question_non_empty_pct": 100.0,
+  "question_exact_match_pct": 20.0,
+  "question_format_non_empty_pct": 100.0,
+  "per_concept": {
+    "Action tendencies": {
+      "n": 5,
+      "concept_accuracy_pct": 80.0,
+      "structure_accuracy_pct": 80.0
+    },
+    "Behavior": {
+      "n": 7,
+      "concept_accuracy_pct": 71.4,
+      "structure_accuracy_pct": 57.1
+    },
+    "Causal relationship": {
+      "n": 3,
+      "concept_accuracy_pct": 33.3,
+      "structure_accuracy_pct": 33.3
+    },
+    "Cognitive judgment": {
+      "n": 7,
+      "concept_accuracy_pct": 71.4,
+      "structure_accuracy_pct": 71.4
+    },
+    "Demographics": {
+      "n": 15,
+      "concept_accuracy_pct": 86.7,
+      "structure_accuracy_pct": 86.7
+    },
+    "Evaluation": {
+      "n": 20,
+      "concept_accuracy_pct": 80.0,
+      "structure_accuracy_pct": 80.0
+    },
+    "Evaluative belief": {
+      "n": 3,
+      "concept_accuracy_pct": 100.0,
+      "structure_accuracy_pct": 33.3
+    },
+    "Events": {
+      "n": 5,
+      "concept_accuracy_pct": 60.0,
+      "structure_accuracy_pct": 60.0
+    },
+    "Expectations of future events": {
+      "n": 3,
+      "concept_accuracy_pct": 100.0,
+      "structure_accuracy_pct": 100.0
+    },
+    "Feelings": {
+      "n": 4,
+      "concept_accuracy_pct": 75.0,
+      "structure_accuracy_pct": 75.0
+    },
+    "Importance": {
+      "n": 3,
+      "concept_accuracy_pct": 100.0,
+      "structure_accuracy_pct": 100.0
+    },
+    "Knowledge": {
+      "n": 3,
+      "concept_accuracy_pct": 100.0,
+      "structure_accuracy_pct": 100.0
+    },
+    "Norms": {
+      "n": 3,
+      "concept_accuracy_pct": 33.3,
+      "structure_accuracy_pct": 33.3
+    },
+    "Place": {
+      "n": 3,
+      "concept_accuracy_pct": 100.0,
+      "structure_accuracy_pct": 100.0
+    },
+    "Policies": {
+      "n": 3,
+      "concept_accuracy_pct": 0.0,
+      "structure_accuracy_pct": 66.7
+    },
+    "Preference": {
+      "n": 10,
+      "concept_accuracy_pct": 80.0,
+      "structure_accuracy_pct": 80.0
+    },
+    "Procedures": {
+      "n": 3,
+      "concept_accuracy_pct": 66.7,
+      "structure_accuracy_pct": 66.7
+    },
+    "Quantities": {
+      "n": 3,
+      "concept_accuracy_pct": 100.0,
+      "structure_accuracy_pct": 100.0
+    },
+    "Rights": {
+      "n": 3,
+      "concept_accuracy_pct": 100.0,
+      "structure_accuracy_pct": 100.0
+    },
+    "Similarity relationship": {
+      "n": 3,
+      "concept_accuracy_pct": 100.0,
+      "structure_accuracy_pct": 100.0
+    },
+    "Time": {
+      "n": 3,
+      "concept_accuracy_pct": 100.0,
+      "structure_accuracy_pct": 100.0
+    },
+    "Values": {
+      "n": 3,
+      "concept_accuracy_pct": 100.0,
+      "structure_accuracy_pct": 66.7
+    }
+  },
+  "per_structure": {
+    "g(h+i)y": {
+      "n": 3,
+      "structure_accuracy_pct": 66.7
+    },
+    "o(h+i)y": {
+      "n": 3,
+      "structure_accuracy_pct": 33.3
+    },
+    "rdy": {
+      "n": 7,
+      "structure_accuracy_pct": 57.1
+    },
+    "vii": {
+      "n": 2,
+      "structure_accuracy_pct": 100.0
+    },
+    "xcy": {
+      "n": 3,
+      "structure_accuracy_pct": 33.3
+    },
+    "xdpl": {
+      "n": 3,
+      "structure_accuracy_pct": 100.0
+    },
+    "xdpl,pro": {
+      "n": 3,
+      "structure_accuracy_pct": 66.7
+    },
+    "xdqu": {
+      "n": 3,
+      "structure_accuracy_pct": 100.0
+    },
+    "xdti": {
+      "n": 3,
+      "structure_accuracy_pct": 100.0
+    },
+    "xdy": {
+      "n": 5,
+      "structure_accuracy_pct": 60.0
+    },
+    "xfd": {
+      "n": 8,
+      "structure_accuracy_pct": 87.5
+    },
+    "xfy": {
+      "n": 4,
+      "structure_accuracy_pct": 75.0
+    },
+    "xhry": {
+      "n": 3,
+      "structure_accuracy_pct": 100.0
+    },
+    "xic": {
+      "n": 7,
+      "structure_accuracy_pct": 71.4
+    },
+    "xid": {
+      "n": 15,
+      "structure_accuracy_pct": 86.7
+    },
+    "xie": {
+      "n": 20,
+      "structure_accuracy_pct": 80.0
+    },
+    "xii": {
+      "n": 4,
+      "structure_accuracy_pct": 75.0
+    },
+    "xis": {
+      "n": 2,
+      "structure_accuracy_pct": 100.0
+    },
+    "xisc": {
+      "n": 3,
+      "structure_accuracy_pct": 100.0
+    },
+    "xp(e)": {
+      "n": 1,
+      "structure_accuracy_pct": 0.0
+    },
+    "xp(e)y": {
+      "n": 1,
+      "structure_accuracy_pct": 0.0
+    },
+    "xpry": {
+      "n": 10,
+      "structure_accuracy_pct": 80.0
+    },
+    "xpyc": {
+      "n": 1,
+      "structure_accuracy_pct": 100.0
+    },
+    "xsy": {
+      "n": 1,
+      "structure_accuracy_pct": 100.0
+    }
+  },
+  "question_format_distribution": {
+    "direct interrogative (with wh word)": 115
+  }
+}
