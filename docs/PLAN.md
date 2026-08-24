@@ -522,7 +522,12 @@ srun --pty bash
 conda activate sig-llm
 ```
 
-For Qwen3.5-9B + vLLM, **1 GPU** is enough (A100 40GB/80GB or H100 both fine). Enter the node with `srun --pty bash` or `srun --jobid=<JOBID> --overlap --pty bash` (job ID from [https://login.ai.lrz.de/](https://login.ai.lrz.de/) dashboard).
+For Qwen3.5-9B + vLLM, **1 GPU** is enough (A100 40GB/80GB or H100 both fine).
+
+> ⚠️ The `--overlap` flag below is fine for single-GPU work, but an overlapping step sees only
+> **one** GPU even when the allocation holds several. For anything multi-GPU (the TP=2 judge,
+> `scripts/run7.sh`), enter the node with plain `srun --jobid=<JOBID> --pty bash`.
+ Enter the node with `srun --pty bash` or `srun --jobid=<JOBID> --overlap --pty bash` (job ID from [https://login.ai.lrz.de/](https://login.ai.lrz.de/) dashboard).
 
 ### 4. Sanity check: transformers load
 
@@ -600,7 +605,7 @@ llm:
   enable_thinking: false
   mock: false
 eval:
-  max_rows: null   # null = all 115 rows
+  max_rows: null   # null = all 113 rows (was 115 before the 2026-08-24 gold correction)
   output_dir: "outputs/"
 ```
 
@@ -655,7 +660,7 @@ vLLM works on LRZ with the workarounds above. Keep `smoke_test_transformers.py` 
 
 ## Key resources to leverage
 
-- Gold set: `data/gold_set.xlsx` (115 rows, all 22 basic concepts). Columns: `example_id, input_indicator, basic_concept, semantic_structure, assertion, question, answer_options, domain, source_type, confusable_with`.
+- Gold set: `data/gold_set.xlsx` (**113 rows** since the 2026-08-24 correction; 115 before, all 22 basic concepts). Columns: `example_id, input_indicator, basic_concept, semantic_structure, assertion, question, answer_options, domain, source_type, confusable_with`.
 - Annotation Guide in the protocol doc is the first draft of the Assertion Developer prompt: the 22 basic concepts (14 subjective + 8 objective), the 3 semantic structures, the per-concept structure-code table, the notation key, the 4 question formats, the 3 worked reference rows, and the confusable-concept heuristics. These get encoded directly into prompts and a `concepts` reference module.
 
 ## Project layout (`~/nlp-css-seminar/`)
@@ -666,7 +671,7 @@ vLLM works on LRZ with the workarounds above. Keep `smoke_test_transformers.py` 
 | Path                                                   | Status                                                       |
 | ------------------------------------------------------ | ------------------------------------------------------------ |
 | `config.yaml`                                          | LLM + eval settings; `mock: false`, `enable_thinking: false` |
-| `data/gold_set.xlsx`                                   | Gold set (115 rows)                                          |
+| `data/gold_set.xlsx`                                   | Gold set (113 rows; 115 before 2026-08-24)                   |
 | `data/concepts.yaml`                                   | 22 concepts, structures, notation                            |
 | `src/sig/`                                             | Agents, pipeline, LLM client, loader, prompts, eval          |
 | `run_test_pipeline.py`, `test_load.py`                 | Local test scripts                                           |

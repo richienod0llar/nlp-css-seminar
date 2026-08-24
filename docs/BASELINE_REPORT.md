@@ -360,6 +360,9 @@ Two results here matter more than the headline:
 
 ## Results at a glance
 
+> **This section is the as-published n=115 view, kept as the historical record.**
+> For the numbers to cite, see [Corrected results (n=113)](#corrected-results-n113) above.
+
 | Metric | Run 1 | Run 2 | Run 3 | Run 4 | Run 6 (**best**) | Δ (R4→R6) |
 |--------|-------|-------|-------|-------|------------------|-----------|
 | Concept accuracy | 57.4% | 69.6% | 75.7% | 75.7%* | **76.5%** (88/115) | +0.9 pp |
