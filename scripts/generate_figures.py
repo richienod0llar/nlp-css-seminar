@@ -218,10 +218,29 @@ def fig02_pipeline_stages(summary_path: Path, out_dir: Path) -> None:
     _save(fig, out_dir, "fig02_pipeline_stages")
 
 
-def fig03_per_concept_accuracy(summary_path: Path, out_dir: Path) -> None:
+def per_concept_from_report(report_path: Path) -> dict:
+    """Per-concept accuracy recomputed on the corrected 113-item gold set.
+
+    The eval_summary_*.json files carry per_concept blocks, but they were
+    written at run time against the uncorrected 115-item set and the pre-
+    standardization Evaluative-belief label. Reading them would put figures and
+    tables into disagreement, so the block is rebuilt from the report instead.
+    """
+    gold = pd.read_excel(ROOT / "data" / "gold_set.xlsx")
+    df = apply_gold_corrections(pd.read_csv(report_path), gold)
+    out = {}
+    for concept, grp in df.groupby("gold_concept"):
+        out[str(concept)] = {
+            "n": int(len(grp)),
+            "concept_accuracy_pct": round(grp["concept_accuracy"].astype(bool).mean() * 100, 1),
+            "structure_accuracy_pct": round(grp["structure_accuracy"].astype(bool).mean() * 100, 1),
+        }
+    return out
+
+
+def fig03_per_concept_accuracy(report_path: Path, out_dir: Path) -> None:
     """Per-concept concept vs structure accuracy (Run 3)."""
-    data = json.loads(summary_path.read_text(encoding="utf-8"))
-    per = data.get("per_concept", {})
+    per = per_concept_from_report(report_path)
     if not per:
         return
     records = [
@@ -251,7 +270,7 @@ def fig03_per_concept_accuracy(summary_path: Path, out_dir: Path) -> None:
 
 def fig04_concept_confusion_heatmap(report_path: Path, out_dir: Path) -> None:
     """Row-normalized concept confusion matrix (errors visible off-diagonal)."""
-    df = pd.read_csv(report_path)
+    df = apply_gold_corrections(pd.read_csv(report_path), pd.read_excel(ROOT / "data" / "gold_set.xlsx"))
     gold_order = sorted(df["gold_concept"].unique(), key=str)
     pred_order = sorted(df["pred_concept"].dropna().unique(), key=str)
     # Keep matrix readable: only concepts appearing in gold set
@@ -286,7 +305,7 @@ def fig04_concept_confusion_heatmap(report_path: Path, out_dir: Path) -> None:
 
 def fig05_structure_confusion_heatmap(report_path: Path, out_dir: Path) -> None:
     """Structure-code confusion matrix (extracted codes)."""
-    df = pd.read_csv(report_path)
+    df = apply_gold_corrections(pd.read_csv(report_path), pd.read_excel(ROOT / "data" / "gold_set.xlsx"))
     df = df.copy()
     df["gold_code"] = df["gold_structure"].map(extract_structure_code)
     df["pred_code"] = df["pred_structure"].map(extract_structure_code)
@@ -321,10 +340,9 @@ def fig05_structure_confusion_heatmap(report_path: Path, out_dir: Path) -> None:
     _save(fig, out_dir, "fig05_structure_confusion_heatmap")
 
 
-def fig06_concept_structure_gap(summary_path: Path, out_dir: Path) -> None:
+def fig06_concept_structure_gap(report_path: Path, out_dir: Path) -> None:
     """Scatter: concept vs structure accuracy per concept — highlights taxonomy paradox."""
-    data = json.loads(summary_path.read_text(encoding="utf-8"))
-    per = data.get("per_concept", {})
+    per = per_concept_from_report(report_path)
     if not per:
         return
     df = pd.DataFrame(
@@ -399,11 +417,34 @@ def fig06_concept_structure_gap(summary_path: Path, out_dir: Path) -> None:
     _save(fig, out_dir, "fig06_concept_structure_gap")
 
 
-def fig07_top_confusion_pairs(confusion_path: Path, out_dir: Path, title: str, stem: str) -> None:
+def confusion_pairs_from_report(report_path: Path, field: str) -> pd.DataFrame:
+    """Top misclassification pairs recomputed on the corrected gold set.
+
+    The confusion_*.csv files were written during the run, against the
+    uncorrected gold set. For structure they are now materially wrong: the most
+    frequent confusion under the corrected labels (xP(e)y -> xPyc, from the
+    Evaluative-belief standardization) does not appear in them at all.
+    """
+    gold = pd.read_excel(ROOT / "data" / "gold_set.xlsx")
+    df = apply_gold_corrections(pd.read_csv(report_path), gold)
+    ok, g_col, p_col = f"{field}_accuracy", f"gold_{field}", f"pred_{field}"
+    wrong = df[~df[ok].astype(bool)]
+    norm = (lambda v: extract_structure_code(str(v))) if field == "structure" else (lambda v: str(v))
+    pairs = [(norm(r[g_col]), norm(r[p_col])) for _, r in wrong.iterrows()]
+    counts = pd.Series(pairs).value_counts()
+    return pd.DataFrame(
+        {"gold_code": [k[0] for k in counts.index],
+         "pred_code": [k[1] for k in counts.index],
+         "count": counts.values}
+    )
+
+
+def fig07_top_confusion_pairs(report_path: Path, out_dir: Path, title: str, stem: str,
+                              field: str = "concept") -> None:
     """Horizontal bar chart of top misclassification pairs (readable alternative to large heatmaps)."""
-    if not confusion_path.exists():
+    if not report_path.exists():
         return
-    df = pd.read_csv(confusion_path)
+    df = confusion_pairs_from_report(report_path, field)
     if df.empty:
         return
     df = df.sort_values("count", ascending=False).head(12)
@@ -426,7 +467,7 @@ def fig07_top_confusion_pairs(confusion_path: Path, out_dir: Path, title: str, s
 
 def fig08_judge_distributions(report_path: Path, out_dir: Path) -> None:
     """Histogram of LLM-as-judge alignment scores (1–5) for both stages."""
-    df = pd.read_csv(report_path)
+    df = apply_gold_corrections(pd.read_csv(report_path), pd.read_excel(ROOT / "data" / "gold_set.xlsx"))
     if "indicator_assertion_score" not in df.columns:
         return
     fig, axes = plt.subplots(1, 2, figsize=(6.5, 3.2), sharey=True)
@@ -456,7 +497,7 @@ def fig08_judge_distributions(report_path: Path, out_dir: Path) -> None:
 
 def fig09_exact_match_vs_judge(report_path: Path, out_dir: Path) -> None:
     """Contrast misleading exact-match rate with judge-based question alignment."""
-    df = pd.read_csv(report_path)
+    df = apply_gold_corrections(pd.read_csv(report_path), pd.read_excel(ROOT / "data" / "gold_set.xlsx"))
     if "assertion_question_score" not in df.columns:
         return
     exact_pct = df["question_exact_match"].mean() * 100
@@ -479,7 +520,7 @@ def fig09_exact_match_vs_judge(report_path: Path, out_dir: Path) -> None:
 
 def fig10_ia_by_concept_correctness(report_path: Path, out_dir: Path) -> None:
     """Judge indicator-assertion score when concept label is correct vs incorrect."""
-    df = pd.read_csv(report_path)
+    df = apply_gold_corrections(pd.read_csv(report_path), pd.read_excel(ROOT / "data" / "gold_set.xlsx"))
     if "indicator_assertion_score" not in df.columns:
         return
     groups = [
@@ -521,6 +562,7 @@ def fig10_ia_by_concept_correctness(report_path: Path, out_dir: Path) -> None:
 def fig12_self_vs_external_judge(ext_report_path: Path, out_dir: Path) -> None:
     """Compare self-judge (9B) vs external judge mean alignment scores."""
     df = pd.read_csv(ext_report_path)
+    df = df[~df["example_id"].isin(EXCLUDED_EXAMPLE_IDS)]
     required = {
         "indicator_assertion_score",
         "ext_indicator_assertion_score",
@@ -573,12 +615,15 @@ def fig12_self_vs_external_judge(ext_report_path: Path, out_dir: Path) -> None:
 def fig13_ext_judge_distributions(ext_report_path: Path, out_dir: Path) -> None:
     """Histogram of external judge alignment scores."""
     df = pd.read_csv(ext_report_path)
+    df = df[~df["example_id"].isin(EXCLUDED_EXAMPLE_IDS)]
     if "ext_indicator_assertion_score" not in df.columns:
         return
-    fig, axes = plt.subplots(1, 2, figsize=(6.5, 3.2), sharey=True)
+    fig, axes = plt.subplots(1, 2, figsize=(6.8, 3.2), sharey=True)
+    # The judge name is already in the suptitle; repeating it in both subplot
+    # titles made them wide enough to overlap each other.
     for ax, col, title, color in [
-        (axes[0], "ext_indicator_assertion_score", f"Indicator → assertion ({EXT_JUDGE_NAME})", C_CONCEPT),
-        (axes[1], "ext_assertion_question_score", f"Assertion → question ({EXT_JUDGE_NAME})", C_QUESTION),
+        (axes[0], "ext_indicator_assertion_score", "Indicator → assertion", C_CONCEPT),
+        (axes[1], "ext_assertion_question_score", "Assertion → question", C_QUESTION),
     ]:
         counts = df[col].dropna().astype(int).value_counts().sort_index()
         scores = list(range(1, 6))
@@ -589,6 +634,7 @@ def fig13_ext_judge_distributions(ext_report_path: Path, out_dir: Path) -> None:
         for bar, h in zip(bars, heights):
             if h:
                 ax.text(bar.get_x() + bar.get_width() / 2, h + 1, str(h), ha="center", fontsize=7)
+        ax.set_ylim(0, max(heights) * 1.18)  # headroom so the tallest count label is not clipped
         ax.set_xlabel("Judge score")
         ax.set_title(title)
         ax.set_xticks(scores)
@@ -657,6 +703,7 @@ def fig15_judge_degeneracy(baseline_dir: Path, out_dir: Path) -> None:
 def fig14_exact_match_vs_ext_judge(ext_report_path: Path, out_dir: Path) -> None:
     """Exact match vs external judge for question quality."""
     df = pd.read_csv(ext_report_path)
+    df = df[~df["example_id"].isin(EXCLUDED_EXAMPLE_IDS)]
     if "ext_assertion_question_score" not in df.columns:
         return
     exact_pct = df["question_exact_match"].mean() * 100
@@ -679,7 +726,7 @@ def fig14_exact_match_vs_ext_judge(ext_report_path: Path, out_dir: Path) -> None
 
 def fig11_mean_ia_by_concept(report_path: Path, out_dir: Path) -> None:
     """Mean indicator-assertion judge score by gold concept."""
-    df = pd.read_csv(report_path)
+    df = apply_gold_corrections(pd.read_csv(report_path), pd.read_excel(ROOT / "data" / "gold_set.xlsx"))
     if "indicator_assertion_score" not in df.columns:
         return
     grp = (
@@ -778,22 +825,24 @@ def main() -> None:
     fig01_run_progression(summary_df, args.out_dir)
     if run_summary.exists():
         fig02_pipeline_stages(run_summary, args.out_dir)
-        fig03_per_concept_accuracy(run_summary, args.out_dir)
-        fig06_concept_structure_gap(run_summary, args.out_dir)
+        fig03_per_concept_accuracy(run_report, args.out_dir)
+        fig06_concept_structure_gap(run_report, args.out_dir)
     if run_report.exists():
         fig04_concept_confusion_heatmap(run_report, args.out_dir)
         fig05_structure_confusion_heatmap(run_report, args.out_dir)
     fig07_top_confusion_pairs(
-        concept_conf,
+        run_report,
         args.out_dir,
         "Top concept misclassification pairs",
         "fig07_top_concept_confusions",
+        field="concept",
     )
     fig07_top_confusion_pairs(
-        struct_conf,
+        run_report,
         args.out_dir,
         "Top structure-code misclassification pairs",
         "fig07_top_structure_confusions",
+        field="structure",
     )
     if judge_report.exists():
         fig08_judge_distributions(judge_report, args.out_dir)

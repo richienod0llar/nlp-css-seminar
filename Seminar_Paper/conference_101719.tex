@@ -409,7 +409,7 @@ R7b $\rightarrow$ R7c & 2/10 & \textbf{0.039} & 2/9 & 0.065 \\
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\columnwidth]{fig01_run_progression.pdf}
+\includegraphics[width=0.95\columnwidth]{fig01_run_progression.pdf}
 \caption{Assertion-stage accuracy across the seven prompt-engineering runs (the judge-only runs are omitted). Prompt engineering alone moves concept accuracy from $65.5\%$ to $85.0\%$ and structure accuracy from $51.3\%$ to $79.6\%$ on the corrected $113$-item gold set. The dip at R7b is the de-leaking of the worked examples, which is not statistically significant.}
 \label{fig:progression}
 \end{figure}
@@ -464,14 +464,14 @@ A recurring pattern is a gap between getting the concept right and getting its s
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=0.86\textwidth]{fig03_per_concept_accuracy.pdf}
+\includegraphics[width=0.78\textwidth]{fig03_per_concept_accuracy.pdf}
 \caption{Per-concept concept and structure accuracy at the best configuration (R7c). Errors concentrate on Events and on Evaluative belief, whose structure code is scored zero for a notational reason discussed in Section~\ref{sec:limitations}; the deontic concepts that dominated earlier runs are repaired. Cells with $n{=}3$ should be read as counts (Table~\ref{tab:perconcept}), not percentages.}
 \label{fig:perconcept}
 \end{figure*}
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\columnwidth]{fig06_concept_structure_gap.pdf}
+\includegraphics[width=0.53\columnwidth]{fig06_concept_structure_gap.pdf}
 \caption{Concept accuracy versus structure accuracy per concept. Points below the diagonal identify concepts the model labels correctly but whose semantic structure it still misassigns.}
 \label{fig:gap}
 \end{figure}
@@ -483,7 +483,7 @@ Two of the three fields the Question Developer emits deserve a more critical rea
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\columnwidth]{fig09_exact_match_vs_judge.pdf}
+\includegraphics[width=0.59\columnwidth]{fig09_exact_match_vs_judge.pdf}
 \caption{Question quality by exact match versus LLM-as-judge. The large majority of questions that do not match the reference wording are nonetheless rated highly aligned, so exact match severely understates quality.}
 \label{fig:exactjudge}
 \end{figure}
@@ -495,14 +495,14 @@ The judge comparison above confounds two things, because the two judges differ i
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\columnwidth]{fig12_self_vs_external_judge.pdf}
+\includegraphics[width=0.64\columnwidth]{fig12_self_vs_external_judge.pdf}
 \caption{Mean alignment scores from the self-judge (9B) and the external judge (72B) on identical Run 4 predictions. Both alignments drop, by $0.42$ and $0.43$ points, under the independent judge. The two-by-two control of Table~\ref{tab:judge2x2} shows this gap reflects a difference in judge quality rather than self-preference.}
 \label{fig:selfext}
 \end{figure}
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\columnwidth]{fig13_ext_judge_distributions.pdf}
+\includegraphics[width=0.90\columnwidth]{fig13_ext_judge_distributions.pdf}
 \caption{External-judge (72B) score distributions for indicator-to-assertion and assertion-to-question alignment. Assertion-to-question scores concentrate at 4--5; indicator-to-assertion scores are more spread, with a small low-scoring tail.}
 \label{fig:extdist}
 \end{figure}
@@ -526,7 +526,7 @@ Qwen3-32B & 4.49 & 4.39 & $-0.04$ \\
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\columnwidth]{fig15_judge_degeneracy.pdf}
+\includegraphics[width=0.92\columnwidth]{fig15_judge_degeneracy.pdf}
 \caption{The same $113$ generations scored by the 9B self-judge and the 32B external judge. The means are nearly identical ($4.48$ against $4.43$), but the distributions are not comparable: the self-judge assigns $1\%$ of items to the middle of the scale against $38\%$ for the external judge, and returns three unparseable scores. Reporting means alone would conceal this.}
 \label{fig:judgedegen}
 \end{figure}
@@ -538,11 +538,11 @@ Qwen3-32B & 4.49 & 4.39 & $-0.04$ \\
 We now examine where the pipeline still fails and what the results imply for automated survey item construction. The confusion structure is analyzed from the per-item predictions of the best configuration; the full confusion matrices are given in Appendix~D, and the most frequent confusions are shown in Fig.~\ref{fig:concconf} and Fig.~\ref{fig:structconf}.
 
 \subsection{Concept Confusions}
-The remaining concept errors are not random but cluster on a few semantically adjacent pairs (Fig.~\ref{fig:concconf}). Evaluation is confused with Preference and Feelings when an indicator mixes an appraisal with a desired change; Events are confused with Demographics when a past occurrence is phrased as a static status (for example, a medical condition read as a demographic attribute); and Norms are confused with Values when a deontic ``should'' is read as a statement of what matters in general. These are exactly the distinctions that expert annotators find hardest, and they concentrate on rare concepts where the prompt provides few or no worked examples.
+The remaining concept errors are not random but cluster on a few semantically adjacent pairs (Fig.~\ref{fig:concconf}). The two most frequent are Cognitive judgment read as Events, and Events read as Feelings; Events are also confused with Demographics when a past occurrence is phrased as a static status, for example a medical condition read as a demographic attribute, and Preference is confused with Evaluation and with Feelings when an indicator mixes an appraisal with a desired change. No single pair accounts for more than two items. Notably, the Norms-versus-Values confusion that dominated the earlier runs is absent at this configuration: the deontic rule of Section~\ref{sec:iterations} removed it entirely, and what remains are distinctions between adjacent \emph{objective} categories rather than the deontic cluster. These are broadly the distinctions that expert annotators also find hardest, which is one reason we regard the absence of a reported inter-annotator agreement (Section~\ref{sec:limitations}) as a real gap rather than a formality.
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\columnwidth]{fig07_top_concept_confusions.pdf}
+\includegraphics[width=0.70\columnwidth]{fig07_top_concept_confusions.pdf}
 \caption{Most frequent concept misclassification pairs at the best configuration. Errors concentrate on semantically adjacent categories rather than being spread uniformly.}
 \label{fig:concconf}
 \end{figure}
@@ -552,7 +552,7 @@ Structure errors have two distinct sources (Fig.~\ref{fig:structconf}). The firs
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\columnwidth]{fig07_top_structure_confusions.pdf}
+\includegraphics[width=0.70\columnwidth]{fig07_top_structure_confusions.pdf}
 \caption{Most frequent structure-code misclassification pairs. Many are induced by an upstream concept error; the rest are within-concept slips on a small number of codes.}
 \label{fig:structconf}
 \end{figure}
@@ -717,15 +717,15 @@ Fig.~\ref{fig:concheat} and Fig.~\ref{fig:structheat} give the full concept and 
 
 \begin{figure}[ht]
 \centering
-\includegraphics[width=\columnwidth]{fig04_concept_confusion_heatmap.pdf}
-\caption{Concept confusion matrix (Run 6). Rows are gold concepts, columns are predictions; color encodes row-normalized rate.}
+\includegraphics[width=0.75\columnwidth]{fig04_concept_confusion_heatmap.pdf}
+\caption{Concept confusion matrix at the best configuration (R7c). Rows are gold concepts, columns are predictions; color encodes row-normalized rate.}
 \label{fig:concheat}
 \end{figure}
 
 \begin{figure}[ht]
 \centering
-\includegraphics[width=\columnwidth]{fig05_structure_confusion_heatmap.pdf}
-\caption{Structure-code confusion matrix (Run 6).}
+\includegraphics[width=0.70\columnwidth]{fig05_structure_confusion_heatmap.pdf}
+\caption{Structure-code confusion matrix at the best configuration (R7c).}
 \label{fig:structheat}
 \end{figure}
 
