@@ -80,6 +80,66 @@ isProject: false
 
 ---
 
+## Progress Update (2026-08-24, Run 7 — review response)
+
+**Run 7 complete** (`scripts/run7.sh`, SLURM job 5760085, one 5 h / 2-GPU allocation). Covers
+every GPU-dependent item the paper review raised. Also: the **gold set was corrected to 113
+items** and the external judge changed model, so all earlier numbers were re-scored offline.
+
+### Gold-set correction (affects every number in this file)
+
+- Dropped exact duplicates: id 71 (= id 5) and id 67 (= id 29). n: 115 → **113**.
+- Standardised Evaluative-belief notation on `xP(e)y` / `xP(e)`; id 3 relabelled from `xPyc`.
+  The model predicts `xPyc` for all three such items and is now scored wrong on all three —
+  the other direction would have inflated structure accuracy by moving gold toward the prompt.
+- Replayed onto existing reports by `src/sig/gold_fixes.py`; nothing was re-run on a GPU.
+- **`docs/reanalysis.json` is now the single source of truth.** The `eval_summary_*.json`
+  files are stale at n=115.
+
+### Ablation (n=113, one intervention per arm)
+
+| Arm | Concept | Structure | Both | Isolates |
+|-----|---------|-----------|------|----------|
+| Run 6 | 76.1% | 74.3% | 72.6% | — |
+| `v6repro` | 78.8% | 76.1% | 74.3% | `concepts.yaml` repair |
+| `v7a` | 77.9% | 73.5% | 71.7% | de-leaked worked examples (W1) |
+| **`v7b`** | **85.0%** | **79.6%** | **79.6%** | + notation-derived Norms/Policies/Causal rule |
+
+v7a → v7b is significant (exact McNemar **p=0.039** concept). The gain is surgical: Norms
+0→100%, Policies 0→66.7%, Causal 33.3→100%, with 18 of 22 concepts unchanged. Caveat: those
+cells are n=3 each, so the effect rests on 7 items.
+
+### External judge: Qwen2.5-72B → **Qwen3-32B**
+
+The 72B was deleted from the shared model store after Run 5; no 70B-class model remains in the
+project store. Run 7 re-judges the same Run 4 predictions so the swap is measurable: mean IA
+4.09 (72B) → 4.51 (32B). Discrimination ordering **72B > 32B > 9B**; the gap cannot be
+decomposed now that the 72B is gone. Disclose as a limitation.
+
+### W3 — 2×2 generator × judge
+
+**No self-preference bias** (each judge scores both generators within 0.05; the 32B is
+*harsher* on its own output). The real finding is distributional: the 9B judge emits a 5 or a
+2 and almost nothing else — **zero 3s and one 4 across 113 items**, plus 3 unparseable — while
+the 32B is unimodal across 2–5. Report distributions, not means.
+
+### Other findings
+
+- **The 32B is a worse generator than the 9B** (68.1% vs 79.6% both-correct). Scale does not
+  buy notation adherence.
+- **Run 1 → Run 2 was mostly a scoring fix**: 8.0 of the 11.5 pp came from the normalizer, and
+  the paired test is not significant (p=0.503). Only two transitions in the whole project are.
+- **Structure is fully gated on concept**: P(structure | concept correct) = 93.8%, vs 0.0% when
+  the concept is wrong.
+
+**Next:** v7c aligning the prompt tables with the corrected `xP(e)y` notation (the prompts
+still teach `xPyc` in four places — do not edit in place, add a new file); a genuinely new
+test set; inter-annotator agreement.
+
+Report: [docs/BASELINE_REPORT.md](BASELINE_REPORT.md) § Run 7. Numbers: `docs/reanalysis.json`.
+
+---
+
 ## Progress Update (2026-07-03, Run 6 structure pass 2)
 
 **Run 6 complete** (timestamp `20260703_180434`). Structure prompt pass 2 + `concepts.yaml` alignment.

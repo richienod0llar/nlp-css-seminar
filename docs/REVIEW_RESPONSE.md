@@ -3,12 +3,31 @@
 Working document for addressing `Seminar_Paper/review.md` (overall rating: **Borderline**,
 Statistical Rigor **1/5**, Experimental Design **2/5**).
 
-Everything in Part 1 and Part 2 is **already done and needs no GPU**. Part 3 is the single
-LRZ job to run. Part 4 is the remaining paper work.
+> **Status 2026-08-24 — Parts 1, 2, 3 and 5 are DONE.** Run 7 executed on SLURM job 5760085;
+> all seven output sets are in `docs/baseline/`. The Part 5 decisions have been taken and
+> applied (gold set corrected to **n=113**). Only **Part 4** (paper prose) remains.
+>
+> **All numbers in this document below this line are the pre-correction n=115 values** and are
+> kept as the record of the review response. The corrected n=113 numbers are in
+> `docs/reanalysis.json` and `docs/BASELINE_REPORT.md` § Corrected results.
 
 ---
 
 ## Part 0 — TL;DR of what the numbers now say
+
+### Outcome after Run 7 (2026-08-24)
+
+| Objection | Resolution |
+|---|---|
+| Prompt leakage (W1) | **Fixed.** `v7a`/`v7b` prompts contain **zero** verbatim gold items. The leakage was real: 100% (15/15) on quoted items vs 75.5% held-out in `v6repro`. |
+| Norms/Policies/Values collapse (W5) | **Fixed.** Norms 0→100%, Policies 0→66.7%, Causal 33.3→100%; 18 of 22 concepts unchanged. Paired McNemar **p=0.039**. |
+| Self-preference bias (W3) | **Refuted, and replaced by something stronger.** The 2×2 shows no self-preference (±0.05). The real finding: the 9B judge emits only 5s and 2s — zero 3s, one 4, across 113 items. |
+| Statistical rigor (1/5) | **Addressed.** Wilson CIs on every cell, exact McNemar on every transition, two no-LLM baselines. Result: only **2 of 6** transitions are significant. |
+| Experimental design (2/5) | **Partly addressed.** Run 7 has a clean one-intervention-per-arm ablation. Still open: a genuinely new test set, and inter-annotator agreement. |
+| Gold-set defects | **Fixed.** Two exact duplicates removed, evaluative-belief notation standardised → n=113. |
+| Judge availability | Qwen2.5-72B was **deleted from the shared store**; replaced with Qwen3-32B and the swap measured on identical items. |
+
+### Original pre-correction analysis (n=115, kept for the record)
 
 | Claim in the paper | Status after re-analysis |
 |---|---|
@@ -231,7 +250,21 @@ external judge**. Delete or rewrite that sentence.
 
 ---
 
-## Part 3 — The LRZ job (run this on SSH)
+## Part 3 — The LRZ job — ✅ DONE (2026-08-24, job 5760085)
+
+Executed in one 5 h / 2-GPU allocation. All three stages completed; the log ends at `=== DONE`
+with no errors. Two things had to be fixed mid-flight and are now in `run7.sh`:
+
+- **`--max-model-len` 4096 → 8192** on the judge server. Stage 2 also *generates* on that
+  server and the v7b prompt alone is 3573 tokens, so 4096 would have failed mid-run.
+- **`stop_server` killed the wrapper `bash`, not `vllm serve`** (the server scripts pipe through
+  `tee`). The orphaned server held ~90 GB and Stage 2 died with `Free memory on device cuda:0`.
+  Servers now start with `setsid` and are signalled as a process group; `wait_gpu_free` polls
+  until the GPUs are actually free instead of `sleep 20`.
+
+Results: `docs/BASELINE_REPORT.md` § Run 7. Numbers: `docs/reanalysis.json`.
+
+### Original instructions (kept for reference)
 
 One allocation does all the GPU work: 3 ablation arms, the external judge on Run 6 and on the
 new best arm, and the full 2×2 judge control. Script: `scripts/run7.sh`.
@@ -369,25 +402,58 @@ Then tell me and I will fold the numbers into the paper.
 
 ### 4.1 Must change, no new data needed
 
+> **Pass 1 complete (2026-08-24).** `Seminar_Paper/conference_101719.tex` +103/−46.
+> Every stale number is updated and the one **contradicted** claim is removed. Audit for
+> `76.5 / 75.7 / 73.9 / 57.4 / $115$` returns clean. Structural checks pass: no dangling
+> refs, no duplicate labels, braces balanced, all 10 `tabular` column counts consistent.
+> The 10 stale figure PDFs in `Seminar_Paper/` were refreshed — they were pre-Run-7 copies.
+>
+> **Not verified: the paper does not compile on the login node (no `pdflatex`).** The
+> changelog table went 7 → 10 columns, so an overfull `hbox` is the realistic risk.
+> Compile locally before submitting.
+>
+> Added during pass 1 because the paper would otherwise have been incoherent:
+> Table VI (McNemar), Table VII (2×2), Fig. 15 (judge degeneracy), a Run 7 paragraph in §6,
+> and three Run 7 columns in the changelog table.
+
+
 | Where | Change |
 |---|---|
-| Abstract, §8, §10 | Lead with **72.7%** held-out, not 76.5%. Report 76.5% as the in-sample figure and say why they differ. |
-| Abstract | "57 to 77 percent" vs body "57.4 to 76.5" — round consistently. |
-| §5.4, §7.1 | Report **P(structure \| concept correct) = 96.6%**; demote raw structure accuracy and drop "both correct" as a headline. |
-| §7.1, Table V | Add Wilson CIs. Stop calling Run 6 "best" — the concept gain over Run 3 is p = 1.0. |
-| §6 | Split Run 2's +12.2 pp into 7.8 pp normalizer + 4.4 pp prompt. |
-| §7.4 | Delete the "external judge discriminates more sharply" sentence — the data says the opposite (+0.39 self vs +0.26 external). |
-| §7.4 | Reframe around the degenerate 9B distribution (97/115 fives), not just the 0.43 gap. Say "0.42 and 0.43", not "roughly 0.43 on each". |
-| §7.3 | "Norms was previously correct" is unevidenced — no per-concept table exists for Runs 3/4. Soften or add the column. |
-| §7.5 | "94 of the 94" vs "every non-matching question that we examined" — pick one. It is all of them; say so. |
-| §7.1 | "Seven concepts, including …" → "namely". |
-| Table VII | Print n=3 cells as **counts**, not percentages. |
-| Table II / App. A | `xDpl, pro` for Procedures shares a prefix with Place `xDpl` — explain, or renumber to `xDpro`. Add `v` and `(e)` to the notation table (now in `concepts.yaml`). |
-| §4.6, App. F | Name the exact checkpoints. "Qwen3.5-9B" is not a real model name and there is no 9B Qwen — confirm whether the generator is Qwen3-8B, and state the judge as Qwen2.5-72B-Instruct. Add the code URL that §10 promises. |
-| §9 Limitations | Add: prompt leakage and how it was measured; 2 duplicate gold items; no inter-annotator agreement; the Evaluative-belief notation inconsistency. |
+| ✅ Abstract, §8, §10 | **Done.** Now leads with 85.0% / 79.6% on the de-leaked prompt and corrected n=113. Leakage is quantified separately (see 4.2) |
+| ✅ Abstract | **Done.** Rounding consistent with the body throughout |
+| ✅ §5.4, §7.1 | **Done.** Added as a defined metric in §5.4 and reported in §7.1: **93.8%** (90/96) vs **0.0%** (0/17) |
+| ✅ §7.1, Table V | **Done.** Wilson CIs added under concept and structure; "our best configuration" removed from the Run 6 paragraph |
+| ✅ §6 | **Done.** Split as 8.0 pp normalizer + 3.5 pp prompt; paired test reported as non-significant (p=0.503) |
+| ✅ §7.4 | **Done.** Sentence removed and replaced with what the 2×2 supports |
+| ✅ §7.4 | **Done.** Reframed around mid-scale occupancy (1% vs 38%) + Fig. 15. "0.42 and 0.43" used |
+| ✅ §7.3 | **Done, and the claim is TRUE.** Traced Norms/Policies/Values across all 7 runs: Norms is 3/3 in R1–R3, collapses to 0/3 in R6, recovers to 3/3 in R7c, while Values moves 1/3→3/3 over the same interval. Added as Table X |
+| ✅ §7.5 | **Done.** Now "including all 94 questions that do not exactly match", unhedged |
+| ✅ §7.1 | **Done.** Now "nine concepts, namely …" (nine, not seven, at Run 7c) |
+| ✅ Table VII | **Done.** Rebuilt on Run 7c as raw counts, with a note on why |
+| ✅ Table II / App. A | **Done.** `v` and `(e)` added; `z` qualified as licensed-but-unused; Table II's Evaluative belief row updated to `xP(e)y`/`xP(e)`. **The review's `xDpl, pro` suggestion was wrong** — see note below |
+| §4.6, App. F | ~~"Qwen3.5-9B" is not a real model name~~ **This was wrong** — `Qwen/Qwen3.5-9B` is real; the model card on disk confirms it (apache-2.0, post-trained, base `Qwen/Qwen3.5-9B-Base`). Name the exact checkpoints: generator `Qwen/Qwen3.5-9B`; judges `Qwen/Qwen2.5-72B-Instruct` (Run 5) and **`Qwen/Qwen3-32B` (Run 7)**. State that the 72B was deleted from the shared store mid-project, which is why the judge changed. Add the code URL that §10 promises. |
+| ✅ §9 Limitations | **Done.** Rewritten, leading with "all reported numbers are in-sample"; adds leakage, the gold-set corrections, and the missing inter-annotator agreement |
 | Whole doc | With `onecolumn`, `figure*`/`table*` are no-ops — simplify. Remove `\tableofcontents` if this goes anywhere but the seminar. |
 
 ### 4.2 New content to add
+
+> **Pass 2 complete (2026-08-24).** `conference_101719.tex` now +184/−76 overall.
+> Added Table VI (McNemar), Table VII (2×2 judge), Table VIII (baselines), Table IX
+> (leakage split), Fig. 15 (judge degeneracy), the conditional-structure metric, and the
+> W8 paragraph on the degenerate format field and the unscored answer options (61.1%).
+>
+> **One review claim turned out to be wrong.** The review suspected `$xDpl,\,pro$` for
+> Procedures was a typo for `$xDpro$`, on the grounds that it collides with Place `$xDpl$`.
+> It is not a typo: gold ids 59, 113 and 114 all use `xDpl, pro`, and `concepts.yaml`
+> licenses it. A procedure is encoded as a deed situated at a place, further marked by
+> `pro`; the codes are distinguished by the presence of `pro`, and scoring compares the full
+> token, so they never collide. Renaming it would have corrupted the data. Added an
+> explanatory footnote instead.
+>
+> **Still not verified: the paper does not compile here (no `pdflatex`).** Structural checks
+> pass — no dangling refs, braces balanced, all tabular column counts consistent — but the
+> changelog table is now 10 columns wide and needs a real compile.
+
 
 - **Table: baselines** (majority 17.4%, lexical 1-NN 33.9%, pipeline 72.7%) — §7.1.
 - **Table: leakage split** (all / in-prompt / held-out) — §5 or §7.1.
@@ -397,6 +463,37 @@ Then tell me and I will fold the numbers into the paper.
 - **§2 literature**: engage the two 2025–26 papers the review names, and soften "to our knowledge,
   this framing has not previously been applied". Discuss **SQP** as the methodologically-native
   quality metric the framework's own authors built.
+
+### 4.3 Pass 3 complete + the paper now compiles
+
+> **Pass 3 done (2026-08-24).** Limitations rewritten (in-sample framing first, plus gold
+> corrections and the IAA gap), future work reordered, §7.3 evidenced with a new cross-run
+> table, and §2 literature engagement added with three new references.
+>
+> **The paper compiles.** No `pdflatex` on the login node and conda's `texlive-core` ships
+> binaries with **zero** macro packages, so I installed `tectonic` instead.
+> Result: **29 pages, 0 undefined citations, 0 undefined references, all 15 bib entries cited.**
+> Only two overfull `hbox`es, both pre-existing (the abstract and the tikz pipeline diagram) —
+> the 10-column changelog table does **not** overflow, so that earlier concern was unfounded.
+> Note tectonic uses XeTeX; a pdfLaTeX build may differ slightly in font handling.
+>
+> Build: `conda activate tectonic && tectonic -X compile conference_101719.tex`
+
+### 4.4 Two review claims that did NOT survive checking
+
+1. **`$xDpl,\,pro$` is not a typo.** The review suspected it should be `$xDpro$` because it
+   collides with Place `$xDpl$`. Gold ids 59, 113 and 114 all use `xDpl, pro` and
+   `concepts.yaml` licenses it; scoring compares the full token, so they never collide.
+   Renaming would have corrupted three gold items. Added an explanatory footnote instead.
+2. **The CUI 2025 paper does not say what the review says it says.** The review describes
+   Adhikari et al. as finding LLM-generated items "too broad, generic in wording, and lack
+   specificity", and frames it as *contradicting* our near-ceiling judge scores. The
+   published abstract reports the opposite: participants found LLM-generated text *clearer*
+   and LLM-adapted questions *less biased* than traditional ones. We cite it accurately
+   rather than repeating the review's framing. (Fetched from arXiv:2501.05985.)
+
+   Worth noting the second new reference, Fuchs, Haensch and Weber (2026), is partly LMU —
+   a natural point of contact.
 
 ### 4.3 Ratings this should move
 
@@ -409,7 +506,29 @@ Then tell me and I will fold the numbers into the paper.
 
 ---
 
-## Part 5 — Decisions I need from you
+## Part 5 — Decisions — ✅ 1 and 2 TAKEN (2026-08-24)
+
+**1. Evaluative-belief notation — decided: standardise on `xP(e)y` / `xP(e)`.**
+Gold id 3 relabelled from `xPyc`; `concepts.yaml` updated to license `xP(e)y` / `xP(e)`
+instead of the phantom `xPy_e` / `xP_e`. The model predicts `xPyc` for all three
+evaluative-belief items, so it is now scored **wrong on all three** — structure accuracy is
+~0.9 pp *lower* than the alternative. That was the point: standardising on `xPyc` would have
+raised the score by moving gold toward what the prompt already teaches.
+
+> **Consequence, still open:** the assertion prompts now contradict the gold set. They inject
+> `Evaluative belief → xP(e)y,xP(e)` from the YAML while their hand-written tables still teach
+> `xPyc` in four places. The prompts were **deliberately not edited** — doing so would
+> invalidate Run 6 and Run 7. Fixing this is **v7c** and needs a GPU: add
+> `assertion_developer_v7c.md`, do not edit the existing files. Expected gain ~2.7 pp structure.
+
+**2. Duplicate gold items — decided: drop both, n=113.**
+Ids 71 and 67 are exact duplicates of 5 and 29 — identical indicator, concept *and* structure.
+Id 71 was additionally one of the 16 prompt-leaked items, so keeping it double-counted a
+memorised item. Applied to `data/gold_set.xlsx`; replayed onto existing reports by
+`src/sig/gold_fixes.py` so no run had to be repeated on a GPU.
+
+**3 and 4 remain open** — they need people, not compute:
+
 
 1. **Evaluative-belief notation** (§1.5). Gold uses `xPyc` for id 3 and `xP(e)`/`xP(e)y` for ids
    107/108, the YAML licenses `xPy_e`/`xP_e`, and the prompt teaches `xPyc`. One of them has to
@@ -448,3 +567,21 @@ Then tell me and I will fold the numbers into the paper.
 | `Seminar_Paper/conference_101719.tex` | `ieeetr` bib style, removed empty Contributions, `[h]`→`[ht]` |
 
 `src/sig/prompts/assertion_developer.md` is **unchanged**, so Run 6 stays reproducible.
+
+### Added 2026-08-24 (Run 7 + gold-set correction)
+
+| File | Change |
+|---|---|
+| `data/gold_set.xlsx` | n 115 → **113** (dropped duplicate ids 67, 71); id 3 structure `xPyc` → `xP(e)y` |
+| `data/concepts.yaml` | Evaluative belief now licenses `xP(e)y` / `xP(e)` (was the phantom `xPy_e` / `xP_e`) |
+| `src/sig/gold_fixes.py` | **new** — replays the gold corrections onto existing reports, so no run was repeated on a GPU |
+| `config.yaml` | `judge.model` → Qwen3-32B |
+| `scripts/start_vllm_judge.sh` | Judge model → Qwen3-32B; `--max-model-len` 4096 → **8192** (Stage 2 also generates on this server) |
+| `scripts/run7.sh` | Judge → 32B; tags renamed; added `run4_32b` judge stage; **`setsid` process-group teardown + `wait_gpu_free`**; `RUN7_SKIP_STAGE1` resume |
+| `scripts/reanalysis.py` | Run 7 arms added; per-arm prompt for the leakage split; 2×2 judge table; judge-swap and generator comparisons; corrections applied to every run |
+| `scripts/generate_figures.py` | `EXT_JUDGE_NAME` constant; Run 7 arms in the progression; accuracy recomputed on corrected gold instead of the stale summaries |
+| `docs/BASELINE_REPORT.md` | Run 7 changelog + results sections; corrected-results table; correction banner |
+| `docs/PLAN.md`, `docs/PAPER_OUTLINE.md` | Run 7 progress entry; all headline numbers moved to n=113 |
+
+**Do not quote `docs/baseline/eval_summary_*.json`** — they are stale at n=115.
+`docs/reanalysis.json` is the single source of truth.

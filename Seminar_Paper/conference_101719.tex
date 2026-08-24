@@ -53,7 +53,7 @@ Rudraksha.Samdhani@campus.lmu.de}
 \maketitle
 
 \begin{abstract}
-    Designing high-quality survey items is expert-intensive, slow, and difficult to reproduce, which limits the pace of empirical work in computational social science. We investigate how far prompt engineering alone, without any fine-tuning, can drive an open-weight large language model to generate survey items that adhere to a formal survey-design framework. We implement a three-step design method, in which a raw indicator is mapped to a basic concept and a semantic structure, then to a declarative assertion, and finally to a respondent-facing question, as a two-agent pipeline built on a 9-billion-parameter model served with constrained JSON decoding. We evaluate the pipeline against a hand-built gold set of 115 items spanning 22 basic concepts, using a dual protocol that separates framework adherence, measured as exact match against the taxonomy, from semantic fidelity, measured with a large language model acting as a judge. Across six controlled prompt-engineering iterations, concept-identification accuracy rises from 57 to 77 percent and semantic-structure accuracy from 51 to 76 percent, with both labels jointly correct on 74 percent of items. An external 72-billion-parameter judge confirms that generated questions are semantically faithful, scoring 4.56 out of 5 on average with all items rated at least 4, even though only about 17 percent match the reference wording exactly. Comparing the model judging its own outputs against the external judge reveals a systematic self-grading bias of roughly 0.43 points. Our results show that framework-grounded prompt engineering reaches a strong baseline without training, and our error analysis identifies rare concepts, such as norms and policies, as the main remaining failure mode.
+    Designing high-quality survey items is expert-intensive, slow, and difficult to reproduce, which limits the pace of empirical work in computational social science. We investigate how far prompt engineering alone, without any fine-tuning, can drive an open-weight large language model to generate survey items that adhere to a formal survey-design framework. We implement a three-step design method, in which a raw indicator is mapped to a basic concept and a semantic structure, then to a declarative assertion, and finally to a respondent-facing question, as a two-agent pipeline built on a 9-billion-parameter model served with constrained JSON decoding. We evaluate the pipeline against a hand-built gold set of 113 items spanning 22 basic concepts, using a dual protocol that separates framework adherence, measured as exact match against the taxonomy, from semantic fidelity, measured with a large language model acting as a judge. Across seven controlled prompt-engineering runs, the last of which is a three-arm ablation that varies one intervention at a time, concept-identification accuracy rises from 65.5 to 85.0 percent and semantic-structure accuracy from 51.3 to 79.6 percent, with both labels jointly correct on 79.6 percent of items. We report Wilson confidence intervals and paired McNemar tests throughout, and find that only two of six run-to-run transitions are statistically significant; we also show that a substantial part of the largest early gain is attributable to a change in the scoring normalizer rather than to the model. Two control experiments qualify the evaluation itself. A two-by-two design in which each of two models judges both models' outputs finds no self-preference bias, but shows that the smaller judge is a degenerate instrument: it assigns only 1 percent of items to the middle of its five-point scale, against 38 percent for the larger judge, while the two means differ by 0.05. And a 32-billion-parameter generator scores lower than the 9-billion-parameter one on the identical prompt, indicating that framework adherence is not primarily limited by model scale. Our results show that framework-grounded prompt engineering reaches a strong baseline without training, and our error analysis identifies rare deontic concepts, such as norms and policies, as the main remaining failure mode.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -69,13 +69,13 @@ A substantial body of survey methodology argues that item construction should no
 
 Large language models (LLMs) are natural candidates to automate this procedure: they are fluent, follow instructions, and can be steered with a small number of worked examples \cite{brown2020language, liu2023prompt}. However, applied naively they generate free-form text that ignores measurement frameworks, invents categories, and produces output that is hard to validate at scale. Two ingredients are needed to make LLM-based item generation useful for methodologists: the generation must be \emph{grounded} in the concept-and-structure taxonomy, and it must be \emph{evaluable} against that taxonomy rather than judged only by surface fluency.
 
-In this paper we ask a focused question: \emph{how far can prompt engineering alone, without any model fine-tuning, drive an open-weight LLM to generate framework-faithful survey items?} We implemented the three-step method as a two-agent pipeline, an Assertion Developer and a Question Developer, built on a 9-billion-parameter open-weight model served with constrained JSON decoding so that every output conforms to the taxonomy. We then evaluate the pipeline against a hand-built gold set of 115 items covering all 22 basic concepts of the framework, using a dual protocol that separates \emph{framework adherence}, measured as exact match against the gold concept and structure labels, from \emph{semantic fidelity}, measured with an LLM acting as a judge \cite{zheng2023judging}.
+In this paper we ask a focused question: \emph{how far can prompt engineering alone, without any model fine-tuning, drive an open-weight LLM to generate framework-faithful survey items?} We implemented the three-step method as a two-agent pipeline, an Assertion Developer and a Question Developer, built on a 9-billion-parameter open-weight model served with constrained JSON decoding so that every output conforms to the taxonomy. We then evaluate the pipeline against a hand-built gold set of 113 items covering all 22 basic concepts of the framework, using a dual protocol that separates \emph{framework adherence}, measured as exact match against the gold concept and structure labels, from \emph{semantic fidelity}, measured with an LLM acting as a judge \cite{zheng2023judging}.
 
 The contributions of this report are:
 \begin{itemize}
 \item A reproducible two-agent pipeline that implements a formal survey-design framework, using dynamic taxonomy injection and constrained decoding to guarantee well-formed, in-taxonomy outputs.
-\item A dual evaluation protocol that distinguishes framework adherence from semantic fidelity, together with a self- versus external-judge comparison that quantifies the self-grading bias of using a model to score its own outputs.
-\item An empirical baseline showing that six controlled prompt-engineering iterations raise concept accuracy from 57.4\% to 76.5\% and structure accuracy from 51.3\% to 75.7\% with no fine-tuning, accompanied by a per-concept error analysis that isolates the remaining failure modes.
+\item A dual evaluation protocol that distinguishes framework adherence from semantic fidelity, together with a two-by-two generator-by-judge control that separates self-preference from judge strictness. The control finds no self-preference bias, and instead shows that a small self-judge fails to use its own rating scale, which we argue is the more consequential finding for LLM-as-judge practice.
+\item An empirical baseline showing that seven controlled prompt-engineering runs raise concept accuracy from 65.5\% to 85.0\% and structure accuracy from 51.3\% to 79.6\% with no fine-tuning, reported with Wilson intervals and paired significance tests, and accompanied by a per-concept error analysis that isolates the remaining failure modes.
 \end{itemize}
 
 The remainder of this paper is organized as follows. Section~\ref{sec:related} reviews the survey-design framework and related work on LLM-based generation and evaluation. Section~\ref{sec:framework} formalizes the task. Section~\ref{sec:method} describes the two-agent pipeline. Section~\ref{sec:setup} presents the gold set, evaluation protocol, and metrics. Section~\ref{sec:iterations} details the prompt-engineering iterations, and Section~\ref{sec:results} reports results. Section~\ref{sec:discussion} analyzes the errors, Section~\ref{sec:limitations} states limitations, and Section~\ref{sec:conclusion} concludes.
@@ -99,7 +99,11 @@ Reliably extracting structured predictions from an LLM requires that its output 
 Our experiments use open-weight models served locally, which avoids sending data to third parties and makes runs reproducible. We rely on a high-throughput inference server that uses paged attention for efficient memory management \cite{kwon2023efficient} to host an open-weight instruction-tuned model family \cite{qwen2024technical}, both for generation and, in a larger configuration, for the external judge.
 
 \subsection{Positioning}
-Relative to prior work, our contribution is the combination of three elements: generation \emph{grounded} in an explicit survey-design taxonomy through constrained decoding, a \emph{dual} evaluation that separates framework adherence from semantic fidelity, and a controlled study of how far \emph{prompt engineering alone} can go before fine-tuning is warranted. To our knowledge, this framing has not previously been applied to automated survey item construction.
+A small but directly adjacent literature has appeared alongside this work. Adhikari et al.~\cite{adhikari2025exploring} build an LLM pipeline that generates questionnaires, pretests them with a target audience, and adapts standardized instruments across contexts, evaluating with $238$ participants in the US and $118$ in South Africa; their participants rated LLM-generated text clearer and LLM-adapted questions less biased than the traditional counterparts. That work validates against human respondents, which our evaluation does not, whereas ours scores adherence to an explicit taxonomy, which theirs does not. Fuchs et al.~\cite{fuchs2026aisurvey} compare prompting strategies for survey-question generation across models and report chain-of-thought prompting as strongest; this is the closest existing point of comparison to our Runs~1 through~7, and we note that our own progression is a study of prompt \emph{content} rather than of reasoning format, so the two are complementary rather than competing.
+
+A further external instrument is available and we do not use it. The Survey Quality Predictor~\cite{sqp2022}, developed in the same measurement tradition as the framework we implement~\cite{saris2014design}, predicts the reliability and validity of a survey question from its formal and linguistic characteristics. Because it is neither an LLM nor reference-based, it does not share the failure modes of either of our evaluation axes, and it would supply exactly the methodologically-native quality metric that Section~\ref{sec:limitations} identifies as missing. We regard applying it as the single most valuable extension of our evaluation.
+
+Relative to this work, our contribution is the combination of three elements: generation \emph{grounded} in an explicit survey-design taxonomy through constrained decoding, a \emph{dual} evaluation that separates framework adherence from semantic fidelity, and a controlled study of how far \emph{prompt engineering alone} can go before fine-tuning is warranted. We do not claim the individual ingredients are new; the combination, and in particular the taxonomy-grounded adherence metric, is what we have not found applied to automated survey item construction elsewhere.
 
 
 \section{Framework and Task Formalization}
@@ -152,7 +156,7 @@ Policies & subj. & $g(H{+}I)y$, $g(H{+}I)$ \\
 Rights & subj. & $xIri$, $xHRy$ \\
 Action tendencies & subj. & $xFD$ \\
 Expectations of future events & subj. & $xFD$ \\
-Evaluative belief & subj. & $xPy$, $xPy\_e$, $xP\_e$ \\
+Evaluative belief & subj. & $xP(e)y$, $xP(e)$ \\
 \hline
 Behaviour & obj. & $rDy$, $rD$ \\
 Events & obj. & $xDy$, $xD$ \\
@@ -161,9 +165,10 @@ Knowledge & obj. & $xIsc$, $xPy$, $xP$ \\
 Time & obj. & $xDti$ \\
 Place & obj. & $xDpl$ \\
 Quantities & obj. & $xDqu$ \\
-Procedures & obj. & $xDpl,\,pro$ \\
+Procedures & obj. & $xDpl,\,pro$\footnotemark[1] \\
 \hline
 \end{tabular}
+\footnotetext[1]{Procedures shares the $pl$ prefix with Place because a procedure is encoded as a deed situated at a place, $xDpl$, further marked by the procedure symbol $pro$. The two are distinguished by the presence of $pro$, not by the prefix; scoring compares the full code token, so the categories do not collide.}
 \end{table}
 
 \subsection{Task Definition}
@@ -237,19 +242,19 @@ The Question Developer receives an assertion and converts it into a respondent-f
 Both agents use schema-guided JSON decoding: the server is given a JSON schema for the current stage and constrains generation to conform to it. For the Assertion Developer we additionally restrict the \emph{concept} field to an enumeration of the 22 taxonomy names, which makes it impossible for the model to emit an out-of-taxonomy label and removes an entire error mode. A separate schema is used for the Question Developer and, later, for the judge. Two robustness measures handle the remaining failure cases. First, because the base model is a reasoning-capable model that may otherwise emit deliberation text, we disable its thinking mode and append an explicit instruction to return only JSON, which is necessary for reliable structured output. Second, a permissive parser strips any stray text around the JSON object, and a targeted repair routine reconstructs the question fields when the model breaks JSON quoting in the answer-options field.
 
 \subsection{Model and Serving}
-Both agents are served by a single instance of an open-weight, instruction-tuned model with roughly nine billion parameters, hosted locally through a high-throughput inference server exposing an OpenAI-compatible API \cite{kwon2023efficient, qwen2024technical}. Generation is deterministic (temperature $0$) with a token budget of $1024$ per call, so that repeated runs of the same prompt are reproducible. The external judge used in Section~\ref{sec:setup} is a larger model from the same family, served separately. Serving open weights locally keeps all data on-premise and fixes the model version across runs; the deployment ran on a single high-memory GPU, with the practical configuration details and workarounds recorded in Appendix~F.
+Both agents are served by a single instance of \texttt{Qwen/Qwen3.5-9B}, an open-weight instruction-tuned model, hosted locally through a high-throughput inference server exposing an OpenAI-compatible API \cite{kwon2023efficient, qwen2024technical}. Generation is deterministic (temperature $0$) with a token budget of $1024$ per call, so that repeated runs of the same prompt are reproducible. The external judge used in Section~\ref{sec:setup} is a larger model, served separately on two GPUs with tensor parallelism. Two external judges appear in this paper: \texttt{Qwen/Qwen2.5-72B-Instruct} for the earlier judge run, and \texttt{Qwen/Qwen3-32B} for all later ones. The change was forced rather than chosen: the 72B checkpoint was removed from the shared model store partway through the project. To keep the substitution measurable we re-scored an identical set of predictions with both judges, and we report that comparison in Section~\ref{sec:results}. Serving open weights locally keeps all data on-premise and fixes the model version across runs; the deployment ran on a single high-memory GPU, with the practical configuration details and workarounds recorded in Appendix~F.
 
 
 \section{Experimental Setup}
 \label{sec:setup}
 
 \subsection{Gold Set}
-We evaluate against a hand-built gold set of $115$ items constructed by expert annotation following the framework. Each row specifies an indicator together with its reference concept, structure code, assertion, question, and answer options, and is additionally tagged with an application domain and a subjective/objective marker. Every one of the $22$ basic concepts is represented, so the set exercises the full taxonomy rather than only its common categories. Of the $115$ items, $73$ realize subjective concepts and $42$ realize objective concepts. The items are drawn from roughly $40$ application domains, the most frequent being customer experience, health, employee experience, psychology and education, and social services; the long tail contains many domains represented by a single item, which tests generalization across topics rather than memorization of a narrow area. Table~\ref{tab:gold} reports the per-concept counts.
+We evaluate against a hand-built gold set of $113$ items constructed by expert annotation following the framework.\footnote{The set was originally built with $115$ items. Two were later found to be exact duplicates of other rows, identical in indicator, concept and structure, and were removed; one of the two also appeared verbatim as a worked example in an early prompt, so retaining it would have counted a memorized item twice. A third correction standardized the notation of one Evaluative-belief item. All reported numbers use the corrected $113$-item set, and all earlier runs were re-scored against it.} Each row specifies an indicator together with its reference concept, structure code, assertion, question, and answer options, and is additionally tagged with an application domain and a subjective/objective marker. Every one of the $22$ basic concepts is represented, so the set exercises the full taxonomy rather than only its common categories. Of the $113$ items, $71$ realize subjective concepts and $42$ realize objective concepts. The items are drawn from roughly $40$ application domains, the most frequent being customer experience, health, employee experience, psychology and education, and social services; the long tail contains many domains represented by a single item, which tests generalization across topics rather than memorization of a narrow area. Table~\ref{tab:gold} reports the per-concept counts.
 
-The distribution is deliberately broad but uneven: frequent concepts such as Evaluation ($n{=}20$) and Demographics ($n{=}15$) are well sampled, whereas a number of concepts, including Norms, Policies, Values, and Causal relationship, appear only three times each. These rare categories yield high-variance per-concept estimates, a caveat we return to in Section~\ref{sec:limitations}, but they are essential for surfacing systematic failure modes on the harder parts of the taxonomy.
+The distribution is deliberately broad but uneven: frequent concepts such as Evaluation ($n{=}19$) and Demographics ($n{=}15$) are well sampled, whereas a number of concepts, including Norms, Policies, Values, and Causal relationship, appear only three times each. These rare categories yield high-variance per-concept estimates, a caveat we return to in Section~\ref{sec:limitations}, but they are essential for surfacing systematic failure modes on the harder parts of the taxonomy.
 
 \begin{table}[t]
-\caption{Gold-Set Composition by Basic Concept ($N=115$)}
+\caption{Gold-Set Composition by Basic Concept ($N=113$)}
 \label{tab:gold}
 \centering
 \footnotesize
@@ -257,8 +262,8 @@ The distribution is deliberately broad but uneven: frequent concepts such as Eva
 \hline
 \textbf{Subjective} & \textbf{n} & \textbf{Objective} & \textbf{n} \\
 \hline
-Evaluation & 20 & Demographics & 15 \\
-Preference & 10 & Behaviour & 7 \\
+Evaluation & 19 & Demographics & 15 \\
+Preference & 9 & Behaviour & 7 \\
 Cognitive judgement & 7 & Events & 5 \\
 Action tendencies & 5 & Knowledge & 3 \\
 Feelings & 4 & Time & 3 \\
@@ -272,7 +277,7 @@ Rights & 3 & & \\
 Expectations of future events & 3 & & \\
 Evaluative belief & 3 & & \\
 \hline
-\textbf{Subtotal} & \textbf{73} & \textbf{Subtotal} & \textbf{42} \\
+\textbf{Subtotal} & \textbf{71} & \textbf{Subtotal} & \textbf{42} \\
 \hline
 \end{tabular}
 \end{table}
@@ -289,13 +294,14 @@ We report two families of metrics. The \emph{objective} metrics measure adherenc
 \item \emph{Concept accuracy}: fraction of items whose predicted concept matches the reference after normalization.
 \item \emph{Structure accuracy}: fraction whose predicted structure code matches the reference.
 \item \emph{Both correct}: fraction for which concept and structure are simultaneously correct, the strictest assertion-stage criterion.
+\item \emph{Conditional structure accuracy}: structure accuracy restricted to items whose concept was identified correctly, $P(s \text{ correct} \mid c \text{ correct})$. Because most concepts license only one structure code (Table~\ref{tab:taxonomy}), unconditional structure accuracy largely re-reports concept accuracy; the conditional form isolates what the structure prompt actually contributes and is the figure we treat as primary.
 \item \emph{Question coverage}: fraction of items for which a non-empty question is produced, and the fraction for which a question format is assigned.
 \item \emph{Question exact match}: fraction whose generated question matches the reference question string after normalization, reported as a strict lower bound on question quality.
 \end{itemize}
 The \emph{semantic} metrics use an LLM as a judge to rate two alignments on a $1$--$5$ scale: \emph{indicator-to-assertion} (IA), whether the assertion faithfully represents the indicator, and \emph{assertion-to-question} (AQ), whether the question faithfully represents the assertion. The judge is prompted with an explicit rubric (5 = perfect alignment; 4 = minor wording differences; 3 = partial; 2 = poor; 1 = none) and returns a score with a brief rationale, decoded under the judge JSON schema. Judge metrics complement exact match because a generated question may differ in wording from the reference yet still be a faithful, high-quality item.
 
 \subsection{Judge Models}
-We use two judge configurations. The \emph{self-judge} is the same 9B model that generates the outputs, which is convenient but risks the self-preference bias discussed in Section~\ref{sec:related}. The \emph{external judge} is a larger, independently served model of roughly $72$ billion parameters from the same family, run on two GPUs. The external judge re-scores the previously generated predictions without any change to prompts or generations, so any difference in scores is attributable to the evaluator rather than to the items being evaluated. Reporting both lets us quantify the self-grading gap directly.
+We use two judge configurations. The \emph{self-judge} is the same 9B model that generates the outputs, which is convenient but risks the self-preference bias discussed in Section~\ref{sec:related}. The \emph{external judge} is a larger, independently served model run on two GPUs: \texttt{Qwen2.5-72B-Instruct} for the first judge run, and \texttt{Qwen3-32B} thereafter, the substitution being forced by the removal of the 72B checkpoint from the shared model store partway through the project. The external judge re-scores the previously generated predictions without any change to prompts or generations, so any difference in scores is attributable to the evaluator rather than to the items being evaluated. Reporting both lets us compare evaluators directly. Because a difference between a small self-judge and a large external judge confounds \emph{who} is judging with \emph{how capable} the judge is, we additionally run a two-by-two control in which each of the two models judges both models' generations; only that design separates self-preference from judge strictness.
 
 \subsection{Reproducibility}
 All runs are driven by a single configuration file that fixes the model paths, decoding parameters (temperature $0$, $1024$ tokens), the judge settings, and the evaluation scope. Because decoding is deterministic, re-running a configuration reproduces its outputs. Each reported run is tied to a specific code state, and the objective summaries and confusion matrices are exported as machine-readable artifacts alongside a per-item prediction table for manual inspection.
@@ -303,33 +309,37 @@ All runs are driven by a single configuration file that fixes the model paths, d
 \section{Prompt-Engineering Iterations}
 \label{sec:iterations}
 
-Rather than tuning the model, we improved the pipeline through a sequence of six controlled iterations, each of which introduced one coherent change while holding the rest of the system fixed. This design lets us attribute changes in accuracy to specific interventions. The interventions fall into three groups: fairer scoring, output constraints, and prompt content (concept and structure disambiguation), plus two judge-only runs that add semantic scoring without altering generations. Table~\ref{tab:changelog} records which technique entered at which run; once introduced, a technique is carried forward.
+Rather than tuning the model, we improved the pipeline through a sequence of controlled runs, holding the rest of the system fixed at each step. We are careful about what this permits us to attribute. Runs~1 through~6 each grouped a small number of related changes, and Run~2 in particular combined a scoring change with two prompt changes, so their individual contributions cannot be separated from the run sequence alone. Run~7 was designed to remedy this: its three arms differ by exactly one intervention each and are evaluated on identical inputs, so its comparisons are attributable in a way the earlier ones are not. The interventions fall into three groups: fairer scoring, output constraints, and prompt content (concept and structure disambiguation), plus two judge-only runs that add semantic scoring without altering generations. Table~\ref{tab:changelog} records which technique entered at which run; once introduced, a technique is carried forward.
 
 \begin{table}[t]
 \caption{Interventions Introduced at Each Run (Carried Forward Thereafter)}
 \label{tab:changelog}
 \centering
 \scriptsize
-\begin{tabular}{l c c c c c c}
+\begin{tabular}{l c c c c c c c c c}
 \hline
-\textbf{Intervention} & \textbf{R1} & \textbf{R2} & \textbf{R3} & \textbf{R4} & \textbf{R5} & \textbf{R6} \\
+\textbf{Intervention} & \textbf{R1} & \textbf{R2} & \textbf{R3} & \textbf{R4} & \textbf{R5} & \textbf{R6} & \textbf{R7a} & \textbf{R7b} & \textbf{R7c} \\
 \hline
-Isolated eval; JSON, thinking disabled & \checkmark & & & & & \\
-US/UK spelling-normalized scoring & & \checkmark & & & & \\
-Concept enum constraint (guided JSON) & & \checkmark & & & & \\
-Concept disambiguation table + examples & & \checkmark & & & & \\
-Structure disambiguation table + examples & & & \checkmark & & & \\
-Question JSON repair fallback & & & \checkmark & & & \\
-Confusion matrices + per-category metrics & & & \checkmark & & & \\
-Self-judge scoring (9B) & & & & \checkmark & & \\
-External judge scoring (72B) & & & & & \checkmark & \\
-Structure prompt pass 2 & & & & & & \checkmark \\
-Reference file aligned with gold codes & & & & & & \checkmark \\
+Isolated eval; JSON, thinking disabled & \checkmark & & & & & & & & \\
+US/UK spelling-normalized scoring & & \checkmark & & & & & & & \\
+Concept enum constraint (guided JSON) & & \checkmark & & & & & & & \\
+Concept disambiguation table + examples & & \checkmark & & & & & & & \\
+Structure disambiguation table + examples & & & \checkmark & & & & & & \\
+Question JSON repair fallback & & & \checkmark & & & & & & \\
+Confusion matrices + per-category metrics & & & \checkmark & & & & & & \\
+Self-judge scoring (9B) & & & & \checkmark & & & & & \\
+External judge scoring (72B) & & & & & \checkmark & & & & \\
+Structure prompt pass 2 & & & & & & \checkmark & & & \\
+Reference file repaired & & & & & & \checkmark & \checkmark & & \\
+Worked examples de-leaked (no gold verbatim) & & & & & & & & \checkmark & \checkmark \\
+Notation-derived deontic/causal rule & & & & & & & & & \checkmark \\
+External judge scoring (32B) & & & & & & & & & \checkmark \\
+Two-by-two generator $\times$ judge control & & & & & & & & & \checkmark \\
 \hline
 \end{tabular}
 \end{table}
 
-\emph{Run 1 (initial baseline).} The first full run established the harness: isolated evaluation over all $115$ items, schema-guided JSON decoding with the model's thinking mode disabled, and exact-match scoring with only light string normalization. The assertion prompt contained a role, strict rules, and three worked examples. This run exposed three recurring problems that motivated the next iterations: concept mismatches caused purely by spelling, frequent confusion between related subjective concepts, and occasional malformed question JSON.
+\emph{Run 1 (initial baseline).} The first full run established the harness: isolated evaluation over the full gold set, schema-guided JSON decoding with the model's thinking mode disabled, and exact-match scoring with only light string normalization. The assertion prompt contained a role, strict rules, and three worked examples. This run exposed three recurring problems that motivated the next iterations: concept mismatches caused purely by spelling, frequent confusion between related subjective concepts, and occasional malformed question JSON.
 
 \emph{Run 2 (fairer scoring and concept constraints).} Three changes targeted concept identification. Scoring was made spelling-invariant across British and American variants; the predicted concept field was constrained to the enumerated taxonomy so the model could no longer invent labels; and the assertion prompt gained a table of commonly confused concepts with disambiguation rules and three additional worked examples covering those cases. Together these changes chiefly improved concept accuracy.
 
@@ -337,55 +347,125 @@ Reference file aligned with gold codes & & & & & & \checkmark \\
 
 \emph{Run 4 (self-judge).} No prompts or generations changed; the run only enabled LLM-as-judge scoring using the same 9B model, adding the IA and AQ semantic scores. This isolates the effect of adding a semantic metric from any change in the items themselves.
 
-\emph{Run 5 (external judge).} The Run 4 predictions were re-scored by the larger 72B judge, again without regenerating any items. Comparing Run 4 and Run 5 scores on identical outputs measures the self-grading bias directly.
+\emph{Run 5 (external judge).} The Run 4 predictions were re-scored by the larger 72B judge, again without regenerating any items. Comparing Run 4 and Run 5 scores on identical outputs isolates the effect of the evaluator, though, as Run~7 shows, it does not by itself identify that effect as self-preference.
 
-\emph{Run 6 (structure prompt pass 2).} The final iteration addressed the structure codes that remained systematically wrong after Run 3. Two worked examples that had taught incorrect codes were corrected, the disambiguation table was extended with rules for feelings, place and procedures, quantities, time, and the values-versus-importance distinction, and seven new examples were added. Critically, the machine-readable reference file was aligned with the gold structure codes, which, through the dynamic injection of Section~\ref{sec:method}, immediately propagated the corrected codes into the prompt. This run produced the largest single-iteration gain in structure accuracy and is our best configuration.
+\emph{Run 6 (structure prompt pass 2).} The final iteration addressed the structure codes that remained systematically wrong after Run 3. Two worked examples that had taught incorrect codes were corrected, the disambiguation table was extended with rules for feelings, place and procedures, quantities, time, and the values-versus-importance distinction, and seven new examples were added. Critically, the machine-readable reference file was aligned with the gold structure codes, which, through the dynamic injection of Section~\ref{sec:method}, immediately propagated the corrected codes into the prompt. This run produced the largest single-iteration gain in structure accuracy. It also, as we discuss in Section~\ref{sec:limitations}, wrote gold-derived structure codes into the prompt, which is one of the reasons Run~7 re-examines the prompt with the worked examples removed.
+
+\emph{Run 7 (ablation, judge replacement, and controls).} The preceding runs bundle several changes each and were all tuned by inspecting errors on the same items they are scored on. Run~7 therefore varies one thing at a time across three arms evaluated on identical inputs. Arm~R7a repeats the Run~6 prompt with only the repaired reference file, isolating that repair. Arm~R7b additionally replaces every worked example with a synthetic one, so that no gold item appears verbatim in the prompt; this arm exists to measure how much of the reported accuracy depended on items the prompt had memorized. Arm~R7c adds a single rule, derived from the notation rather than from inspecting errors, that distinguishes the deontic subject symbols underlying Norms and Policies from the general-subject symbol underlying Values, and separates causal from similarity relations. Run~7 also re-scores predictions with a replacement external judge and runs the two-by-two generator-by-judge control described in Section~\ref{sec:setup}.
 
 \section{Results}
 \label{sec:results}
 
-We report objective and semantic results for the six runs of Section~\ref{sec:iterations}. Unless noted, ``best'' refers to Run~6, our strongest configuration.
+We report objective and semantic results for the runs of Section~\ref{sec:iterations}. Unless noted, ``best'' refers to arm~R7c, our strongest configuration and the only one that combines a de-leaked prompt with the notation-derived rule.
 
 \subsection{Overall Progression}
-Table~\ref{tab:main} and Fig.~\ref{fig:progression} summarize the assertion-stage metrics across runs. Prompt engineering alone, with no fine-tuning, raises concept accuracy from $57.4\%$ to $76.5\%$ and structure accuracy from $51.3\%$ to $75.7\%$; the strict both-correct criterion rises from $42.6\%$ to $73.9\%$. The two largest jumps come from the two content interventions: the concept work in Run~2 (concept $+12.2$ points) and the structure pass in Run~6 (structure $+13.1$ points over Run~4). Run~4 reproduces the Run~3 generations exactly and adds only judge scores, so its objective metrics are identical to Run~3.
+Table~\ref{tab:main} and Fig.~\ref{fig:progression} summarize the assertion-stage metrics across runs. Prompt engineering alone, with no fine-tuning, raises concept accuracy from $65.5\%$ to $85.0\%$ and structure accuracy from $51.3\%$ to $79.6\%$; the strict both-correct criterion rises from $47.8\%$ to $79.6\%$. All runs are scored on the same $113$ items under the same normalizer, so the columns are directly comparable, and Run~4 is omitted from the table because it reproduces the Run~3 generations exactly and adds only judge scores.
+
+Two qualifications matter more than the trend line. First, because every run is evaluated on the identical item set, the comparisons are paired, and an exact McNemar test is the appropriate instrument. Applying it to each consecutive transition (Table~\ref{tab:mcnemar}) shows that only two of the six are significant at the $5\%$ level: the structure pass in Run~6 ($p=0.024$) and the notation rule in Run~7c ($p=0.039$). The remaining transitions, including the Run~3 to Run~6 concept gain that earlier drafts of this work described as producing the best configuration, are within sampling noise at this sample size. Second, the largest early gain is partly an artifact of measurement rather than of generation. Run~2 introduced a spelling-normalized scoring layer at the same time as the enum constraint and the disambiguation table; re-scoring the Run~1 outputs under that normalizer, with no change to the generations, raises Run~1 from $57.5\%$ to $65.5\%$. Of the $11.5$-point Run~1 to Run~2 concept gain, $8.0$ points are therefore attributable to the change in the measuring instrument, and the residual paired comparison is not significant ($p=0.503$). We report the normalizer-adjusted figure throughout so that the progression reflects model behavior rather than scoring changes.
 
 \begin{table}[t]
 \caption{Objective and Semantic Metrics Across Runs (Percent, or 1--5 for Judge Scores)}
 \label{tab:main}
 \centering
 \footnotesize
-\begin{tabular}{l c c c c c}
+\begin{tabular}{l c c c c c c c}
 \hline
-\textbf{Metric} & \textbf{R1} & \textbf{R2} & \textbf{R3} & \textbf{R4} & \textbf{R6} \\
+\textbf{Metric} & \textbf{R1} & \textbf{R2} & \textbf{R3} & \textbf{R6} & \textbf{R7a} & \textbf{R7b} & \textbf{R7c} \\
 \hline
-Concept accuracy & 57.4 & 69.6 & 75.7 & 75.7$^{*}$ & \textbf{76.5} \\
-Structure accuracy & 51.3 & 55.7 & 62.6 & 62.6$^{*}$ & \textbf{75.7} \\
-Both correct & 42.6 & 53.0 & 60.9 & 60.9$^{*}$ & \textbf{73.9} \\
-Question coverage & 99.1 & 99.1 & 100 & 100 & 100 \\
-Question exact match & 20.0 & 20.0 & 18.3 & 18.3 & 17.4 \\
-Mean IA (self, 9B) & -- & -- & -- & 4.51 & -- \\
-Mean AQ (self, 9B) & -- & -- & -- & 4.99 & -- \\
+Concept accuracy & 65.5 & 69.0 & 75.2 & 76.1 & 78.8 & 77.9 & \textbf{85.0} \\
+\quad 95\% CI & \scriptsize 56--74 & \scriptsize 60--77 & \scriptsize 67--82 & \scriptsize 68--83 & \scriptsize 70--85 & \scriptsize 69--85 & \scriptsize \textbf{77--90} \\
+Structure accuracy & 51.3 & 54.0 & 61.1 & 74.3 & 76.1 & 73.5 & \textbf{79.6} \\
+\quad 95\% CI & \scriptsize 42--60 & \scriptsize 45--63 & \scriptsize 52--70 & \scriptsize 66--82 & \scriptsize 68--83 & \scriptsize 65--81 & \scriptsize \textbf{71--86} \\
+Both correct & 47.8 & 51.3 & 59.3 & 72.6 & 74.3 & 71.7 & \textbf{79.6} \\
+Question coverage & 99.1 & 99.1 & 100 & 100 & 100 & 100 & 100 \\
+Question exact match & 20.4 & 20.4 & 18.6 & 17.7 & 20.4 & 20.4 & 20.4 \\
 \hline
-\multicolumn{6}{l}{\scriptsize $^{*}$Run 4 re-scores the Run 3 generations; objective metrics are unchanged.}
+\multicolumn{8}{l}{\scriptsize All values on the corrected $113$-item gold set. R7a--R7c are the three ablation arms of Run~7,}\\
+\multicolumn{8}{l}{\scriptsize each adding exactly one intervention. Run~4 is omitted: it re-scores the Run~3 generations unchanged.}
+\end{tabular}
+\end{table}
+
+\begin{table}[t]
+\caption{Exact McNemar Tests on Consecutive Runs (Paired, $N=113$)}
+\label{tab:mcnemar}
+\centering
+\footnotesize
+\begin{tabular}{l c c c c}
+\hline
+ & \multicolumn{2}{c}{\textbf{Concept}} & \multicolumn{2}{c}{\textbf{Structure}} \\
+\textbf{Transition} & \textbf{$b$/$c$} & \textbf{$p$} & \textbf{$b$/$c$} & \textbf{$p$} \\
+\hline
+R1 $\rightarrow$ R2 & 8/12 & 0.503 & 7/10 & 0.629 \\
+R2 $\rightarrow$ R3 & 3/10 & 0.092 & 3/11 & 0.057 \\
+R3 $\rightarrow$ R6 & 12/13 & 1.000 & 12/27 & \textbf{0.024} \\
+R6 $\rightarrow$ R7a & 0/3 & 0.250 & 1/3 & 0.625 \\
+R7a $\rightarrow$ R7b & 2/1 & 1.000 & 4/1 & 0.375 \\
+R7b $\rightarrow$ R7c & 2/10 & \textbf{0.039} & 2/9 & 0.065 \\
+\hline
+\multicolumn{5}{l}{\scriptsize $b$ = items correct before but wrong after; $c$ = wrong before, correct after.}\\
+\multicolumn{5}{l}{\scriptsize Only two transitions reach $p<0.05$.}
 \end{tabular}
 \end{table}
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{fig01_run_progression.pdf}
-\caption{Assertion-stage accuracy across the four prompt-engineering runs (Runs 1, 2, 3, and 6; the judge-only runs are omitted). Prompt engineering alone moves concept and structure accuracy from roughly $50\%$ to roughly $76\%$.}
+\caption{Assertion-stage accuracy across the seven prompt-engineering runs (the judge-only runs are omitted). Prompt engineering alone moves concept accuracy from $65.5\%$ to $85.0\%$ and structure accuracy from $51.3\%$ to $79.6\%$ on the corrected $113$-item gold set. The dip at R7b is the de-leaking of the worked examples, which is not statistically significant.}
 \label{fig:progression}
 \end{figure}
 
 \subsection{Per-Concept and Per-Structure Behavior}
-Aggregate accuracy hides strong variation across the taxonomy. Fig.~\ref{fig:perconcept} shows per-concept concept and structure accuracy at the best configuration. Seven concepts, including Expectations of future events, Importance, Knowledge, Place, Quantities, Rights, and Time, reach $100\%$ on both concept and structure, while the frequent categories Evaluation, Demographics, and Preference sit at $80\%$. At the other extreme, Norms scores $0\%$ and Policies scores $0\%$ on concept identification, and Causal relationship reaches only $33\%$; these are precisely the rare, semantically subtle categories.
+Three further measurements put the headline number in context.
+
+\emph{Reference points.} The pipeline is well clear of trivial baselines but not of a larger model by default. A majority-class classifier that always predicts the most frequent concept reaches $16.8\%$, and a leave-one-out lexical nearest-neighbour classifier over TF-IDF representations of the indicators reaches $32.7\%$ concept and $31.0\%$ structure accuracy. More informative is the upper reference point: running the identical Run~7c prompt through \texttt{Qwen3-32B}, a model roughly $3.5\times$ larger, yields $77.0\%$ concept and $68.1\%$ structure accuracy, \emph{below} the 9B pipeline on both (Table~\ref{tab:baselines}). The paired comparison is directional rather than conclusive ($p=0.064$), but it indicates that the residual errors are not primarily a matter of model capacity, and that framework adherence is not something scale supplies for free.
+
+\emph{Structure is largely determined by concept.} Conditional on a correct concept, structure accuracy is $93.8\%$ ($90/96$); when the concept is wrong, it is $0.0\%$ ($0/17$). Under the best configuration the model never recovers the correct structure code after misidentifying the concept. Unconditional structure accuracy and the both-correct criterion therefore largely re-report concept accuracy, and we regard $P(s \mid c)$ as the informative structure metric. A practical consequence is that concept errors are worth twice their nominal cost.
+
+\emph{How much of earlier accuracy was memorized.} Sixteen of the original gold items appeared verbatim, with their labels, as worked examples in the prompt used through Run~6; fifteen survive into the corrected item set. Splitting the R7a arm, which still uses that prompt, on this boundary gives $15/15$ concept accuracy on the quoted items against $75.5\%$ ($74/98$) on the rest (Table~\ref{tab:leakage}). Every quoted item receives the correct concept, and all but one the correct structure. Arm~R7b removes them, and its accuracy on the remaining items is statistically indistinguishable from R7a's ($p=1.0$), so the prompt was not depending on those examples in aggregate even though it had memorized them individually. We report R7b and R7c, which contain no verbatim gold items, as the configurations whose numbers are not inflated by this effect.
+
+\begin{table}[t]
+\caption{Reference Points for Concept and Structure Accuracy ($N=113$)}
+\label{tab:baselines}
+\centering
+\footnotesize
+\begin{tabular}{l c c}
+\hline
+\textbf{System} & \textbf{Concept} & \textbf{Structure} \\
+\hline
+Majority class & 16.8 & -- \\
+Lexical 1-NN (TF-IDF, leave-one-out) & 32.7 & 31.0 \\
+Qwen3-32B generator, Run 7c prompt & 77.0 & 68.1 \\
+\textbf{Qwen3.5-9B pipeline (Run 7c)} & \textbf{85.0} & \textbf{79.6} \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[t]
+\caption{Accuracy Split by Whether the Item Appears Verbatim in the Prompt (Arm R7a)}
+\label{tab:leakage}
+\centering
+\footnotesize
+\begin{tabular}{l r r r}
+\hline
+\textbf{Subset} & \textbf{n} & \textbf{Concept} & \textbf{Structure} \\
+\hline
+Quoted in the prompt & 15 & 15/15 & 14/15 \\
+Not quoted & 98 & 74/98 & 72/98 \\
+\hline
+All items & 113 & 89/113 & 86/113 \\
+\hline
+\multicolumn{4}{l}{\scriptsize Arms R7b and R7c quote no gold items and so admit no such split.}
+\end{tabular}
+\end{table}
+
+Aggregate accuracy hides strong variation across the taxonomy. Fig.~\ref{fig:perconcept} shows per-concept results at the best configuration, and Table~\ref{tab:perconcept} gives them as counts. Nine concepts, namely Causal relationship, Expectations of future events, Importance, Norms, Rights, Knowledge, Place, Quantities, and Time, are answered correctly on every item for both concept and structure. The frequent categories sit somewhat lower: Evaluation at $17/19$, Demographics at $13/15$, Preference at $7/9$. The weakest cells are Events ($2/5$) and Evaluative belief, which is identified correctly on all three items but scores $0/3$ on structure, for a reason that is a property of the gold notation rather than of the model and which we return to in Section~\ref{sec:limitations}. We stress that the three-item cells should not be read as percentages. Norms and Policies, which motivated the Run~7c intervention, move from $0/3$ and $0/3$ before the rule to $3/3$ and $2/3$ after it; that is a real and targeted improvement, but it rests on five items, and the paired test over the full item set ($p=0.039$) is the statistic we rely on rather than the per-cell counts.
 
 A recurring pattern is a gap between getting the concept right and getting its structure right. Fig.~\ref{fig:gap} plots this directly. Run~6 largely closed the gap for several codes that had been systematically wrong in Run~4: the future-deed code rose from $0\%$ to $88\%$, the place code from $0\%$ to $83\%$, the feeling code from $0\%$ to $75\%$, and the time, quantity, and societal-value codes each reached $100\%$. What remains is concentrated in a few categories where a correct concept is still paired with the wrong structure, discussed in Section~\ref{sec:discussion}.
 
 \begin{figure*}[t]
 \centering
 \includegraphics[width=0.86\textwidth]{fig03_per_concept_accuracy.pdf}
-\caption{Per-concept concept and structure accuracy at the best configuration (Run 6). Rare, semantically subtle concepts (Norms, Policies, Causal relationship) dominate the errors, while most objective and well-sampled subjective concepts are at or near ceiling.}
+\caption{Per-concept concept and structure accuracy at the best configuration (R7c). Errors concentrate on Events and on Evaluative belief, whose structure code is scored zero for a notational reason discussed in Section~\ref{sec:limitations}; the deontic concepts that dominated earlier runs are repaired. Cells with $n{=}3$ should be read as counts (Table~\ref{tab:perconcept}), not percentages.}
 \label{fig:perconcept}
 \end{figure*}
 
@@ -397,7 +477,9 @@ A recurring pattern is a gap between getting the concept right and getting its s
 \end{figure}
 
 \subsection{Question Stage}
-The Question Developer solves coverage: from Run~3 onward it produces a non-empty question and an assigned format for every item ($100\%$). Exact string match against the reference question, however, is low and slightly decreasing across runs ($20.0\%$ down to $17.4\%$). This is expected: many faithful questions are simply worded differently from the reference. Every generated question was tagged with the same format, a direct interrogative with a WH word, reflecting the prompt's stated preference for that form. Fig.~\ref{fig:exactjudge} contrasts exact match with judge scores and shows that the two are essentially uncorrelated, so exact match understates question quality; the semantic results below make this precise.
+The Question Developer solves coverage: from Run~3 onward it produces a non-empty question and an assigned format for every item ($100\%$). Exact string match against the reference question, however, is low and flat across runs ($20.4\%$ at Run~7c, and never above $20.4\%$ anywhere). This is expected: many faithful questions are simply worded differently from the reference. Fig.~\ref{fig:exactjudge} contrasts exact match with judge scores and shows that the two are essentially uncorrelated, so exact match understates question quality; the semantic results below make this precise.
+
+Two of the three fields the Question Developer emits deserve a more critical reading than earlier drafts of this work gave them. The \emph{question format} $\phi$ is degenerate: every one of the $113$ generated items is tagged as a direct interrogative with a WH word, so $\phi$ takes a single value across the corpus and the five-format space $\Phi$ of Section~\ref{sec:framework} is unused. A field with no variance cannot discriminate between systems, and we do not treat it as a result; it reflects the prompt's stated preference for that form rather than a property of the items. The \emph{answer options} $o$ were not scored against the reference at all in earlier drafts, despite being part of the gold tuple. Scoring them by response type, that is, comparing whether the generated and reference options are both ordinal scales, both binary, both nominal, both ranked, or both open-ended, rather than requiring string identity, gives $61.1\%$ agreement. That is markedly weaker than the question stage itself and identifies answer-option generation as the least reliable part of the pipeline, and the part least examined by our evaluation.
 
 \begin{figure}[t]
 \centering
@@ -407,12 +489,14 @@ The Question Developer solves coverage: from Run~3 onward it produces a non-empt
 \end{figure}
 
 \subsection{Semantic (Judge) Results}
-Semantic scoring confirms that both stages are strong. Under the self-judge (Run~4), mean indicator-to-assertion alignment is $4.51/5$ and mean assertion-to-question alignment is $4.99/5$. Re-scoring the identical predictions with the external 72B judge (Run~5) lowers both means, to $4.09$ for IA and $4.56$ for AQ, a drop of roughly $0.43$ points on each metric (Fig.~\ref{fig:selfext}). Despite this correction, the question stage remains strong under the stricter judge: all $115$ items score at least $4$ on assertion-to-question alignment, and $94$ of the $94$ questions that do not exactly match the reference still score at least $4$. The external judge also spreads its scores more realistically than the self-judge, whose IA distribution was sharply bimodal; the external IA distribution is centered on $4$ with a longer lower tail (Fig.~\ref{fig:extdist}). The interpretation of the gap, and of which items the external judge penalizes, is taken up in Section~\ref{sec:discussion}.
+Semantic scoring confirms that both stages are strong. Under the self-judge, mean indicator-to-assertion alignment is $4.51/5$ and mean assertion-to-question alignment is $4.99/5$. Re-scoring the identical predictions with the external \texttt{Qwen2.5-72B-Instruct} judge lowers both means, to $4.09$ for IA and $4.56$ for AQ, drops of $0.42$ and $0.43$ points respectively (Fig.~\ref{fig:selfext}). Despite this correction, the question stage remains strong under the stricter judge: every item scores at least $4$ on assertion-to-question alignment, including all $94$ questions that do not exactly match the reference. An assertion-to-question mean of $4.99/5$ from the self-judge is, however, better read as a degenerate measurement than as a quality result, a point we develop below.
+
+The judge comparison above confounds two things, because the two judges differ in identity \emph{and} in capacity. A larger model being stricter is as consistent with the data as a model preferring its own outputs. We therefore ran the two-by-two control, in which each of the 9B generator and a \texttt{Qwen3-32B} model judges both models' generations on the same $113$ items (Table~\ref{tab:judge2x2}). The result does not support a self-preference reading. Each judge scores the two generators within $0.05$ points of each other, and the 32B judge is in fact marginally \emph{harsher} on its own output than on the 9B's. What separates the judges is not whose output they are grading but how they use the scale. On identical generations the two means differ by only $0.05$, yet the 9B judge places $1\%$ of items in the middle of its five-point scale against $38\%$ for the 32B judge, and fails to return a parseable score on three items altogether (Fig.~\ref{fig:judgedegen}). The 9B judge emits a $5$ or a $2$ and almost nothing else. We conclude that the earlier self-grading result is better described as a difference in judge quality than as self-preference, and that reporting a judge's score \emph{distribution} is necessary: the means alone would have made these two instruments look equivalent.
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{fig12_self_vs_external_judge.pdf}
-\caption{Mean alignment scores from the self-judge (9B) and the external judge (72B) on identical Run 4 predictions. Both alignments drop by about $0.43$ points under the independent judge, evidence of a self-grading bias.}
+\caption{Mean alignment scores from the self-judge (9B) and the external judge (72B) on identical Run 4 predictions. Both alignments drop, by $0.42$ and $0.43$ points, under the independent judge. The two-by-two control of Table~\ref{tab:judge2x2} shows this gap reflects a difference in judge quality rather than self-preference.}
 \label{fig:selfext}
 \end{figure}
 
@@ -421,6 +505,30 @@ Semantic scoring confirms that both stages are strong. Under the self-judge (Run
 \includegraphics[width=\columnwidth]{fig13_ext_judge_distributions.pdf}
 \caption{External-judge (72B) score distributions for indicator-to-assertion and assertion-to-question alignment. Assertion-to-question scores concentrate at 4--5; indicator-to-assertion scores are more spread, with a small low-scoring tail.}
 \label{fig:extdist}
+\end{figure}
+
+\begin{table}[t]
+\caption{Two-by-Two Generator $\times$ Judge Control: Mean Indicator-to-Assertion Score ($N=113$)}
+\label{tab:judge2x2}
+\centering
+\footnotesize
+\begin{tabular}{l c c c}
+\hline
+\textbf{Generator} & \textbf{Judged by 9B} & \textbf{Judged by 32B} & \textbf{Self $-$ other} \\
+\hline
+Qwen3.5-9B & 4.48 & 4.43 & $-0.01$ \\
+Qwen3-32B & 4.49 & 4.39 & $-0.04$ \\
+\hline
+\multicolumn{4}{l}{\scriptsize Self-preference would appear as a positive value in the last column.}\\
+\multicolumn{4}{l}{\scriptsize Both are negative: each judge is marginally harsher on its own output.}
+\end{tabular}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{fig15_judge_degeneracy.pdf}
+\caption{The same $113$ generations scored by the 9B self-judge and the 32B external judge. The means are nearly identical ($4.48$ against $4.43$), but the distributions are not comparable: the self-judge assigns $1\%$ of items to the middle of the scale against $38\%$ for the external judge, and returns three unparseable scores. Reporting means alone would conceal this.}
+\label{fig:judgedegen}
 \end{figure}
 
 
@@ -450,10 +558,29 @@ Structure errors have two distinct sources (Fig.~\ref{fig:structconf}). The firs
 \end{figure}
 
 \subsection{A Prompt-Engineering Trade-off: The Norms Regression}
-Prompt engineering is not monotonic. The Run~6 pass that strengthened the values-versus-importance rules had a side effect: the model began mapping deontic ``should'' and ``ought'' indicators to Values rather than Norms, so the Norms code, previously correct, regressed to $0\%$. This is a concrete illustration that reinforcing one distinction can weaken an adjacent one when categories share surface cues, and it argues for adding a targeted Norms example rather than further broadening the values rule. We treat this as the clearest next prompt fix.
+Prompt engineering is not monotonic. The Run~6 pass that strengthened the values-versus-importance rules had a side effect: the model began mapping deontic ``should'' and ``ought'' indicators to Values rather than Norms. Table~\ref{tab:norms} traces the three affected concepts across every run and makes the trade-off explicit. Norms is answered correctly on all three items in Runs~1 through~3, collapses to $0/3$ in Run~6, and recovers to $3/3$ only in Run~7c; Values moves in the opposite direction over the same interval, from $1/3$ to $3/3$. The Run~6 prompt did not simply fail on Norms, then: it purchased Values accuracy at the cost of Norms accuracy, because both categories are cued by the same modal surface forms.
+
+The Run~7c fix is not another disambiguation example. The framework already distinguishes the two: \texttt{concepts.yaml} assigns Norms the general-subject symbol $o$ and Policies the government symbol $g$, while Values uses $v$. The prompt's tables named the concepts but never explained those symbols, so the distinction existed in the notation and was invisible to the model. Adding one rule that derives the concept from the subject symbol repairs Norms without disturbing Values, and moves Policies from $0/3$ to $2/3$, a category that had been wrong on every item in every previous run. We note the shape of this result: the most effective single intervention we found was not new examples but a statement of a distinction the framework already encoded.
+
+\begin{table}[t]
+\caption{The Norms/Values Trade-Off Across Runs (Correct Items, $n{=}3$ Each)}
+\label{tab:norms}
+\centering
+\footnotesize
+\begin{tabular}{l c c c c c c c}
+\hline
+\textbf{Concept} & \textbf{R1} & \textbf{R2} & \textbf{R3} & \textbf{R6} & \textbf{R7a} & \textbf{R7b} & \textbf{R7c} \\
+\hline
+Norms & 3/3 & 3/3 & 3/3 & 0/3 & 1/3 & 0/3 & \textbf{3/3} \\
+Policies & 0/3 & 0/3 & 0/3 & 0/3 & 0/3 & 0/3 & \textbf{2/3} \\
+Values & 1/3 & 2/3 & 1/3 & 3/3 & 3/3 & 3/3 & \textbf{3/3} \\
+\hline
+\multicolumn{8}{l}{\scriptsize Concept identification. Run 6 gains Values and loses Norms; Run 7c holds both.}
+\end{tabular}
+\end{table}
 
 \subsection{Self- versus External-Judge Bias}
-The self-judge and external judge agree on the qualitative conclusions but not on the numbers. Both alignment scores fall by about $0.43$ points under the independent 72B judge, confirming a self-grading bias in which the 9B model rates its own outputs generously. The bias is not uniform: the largest self-minus-external gaps cluster on Demographics indicators, where the external judge penalizes first-person paraphrases (for example, rendering an employment-status or household-composition indicator as ``My employment status is\ldots'') as a scope mismatch for what should be a neutral factual item, whereas the self-judge rated them perfect. The external judge also discriminates more sharply by correctness: its mean indicator-to-assertion score is clearly lower when the concept label is wrong than when it is right, a separation the self-judge largely failed to make. This is direct evidence for reporting an independent judge rather than self-evaluation.
+The self-judge and external judge agree on the qualitative conclusions but not on the numbers. Both alignment scores fall, by $0.42$ and $0.43$ points, under the independent 72B judge. The bias is not uniform: the largest self-minus-external gaps cluster on Demographics indicators, where the external judge penalizes first-person paraphrases (for example, rendering an employment-status or household-composition indicator as ``My employment status is\ldots'') as a scope mismatch for what should be a neutral factual item, whereas the self-judge rated them perfect. Our two-by-two control (Section~\ref{sec:results}) shows that this gap should not be read causally as self-preference: with generator and judge varied independently, neither model favors its own output. The defensible conclusion is narrower and, we think, more useful. A small self-judge is an unreliable instrument irrespective of whose text it grades, because it does not use its own rating scale; an independent judge should be reported not because self-evaluation is self-serving, but because a weak judge cannot discriminate.
 
 \subsection{Exact Match Understates Question Quality}
 The question stage exposes a measurement pitfall. Exact string match against the reference is low (about $17\%$) and is essentially uncorrelated with judged alignment. Under the external judge, every non-matching question that we examined still scored at least $4$ on assertion-to-question alignment. In other words, exact match here measures wording overlap, not quality, and would badly misrank the system. For generative item construction we therefore recommend judge-based alignment as the primary question metric, with exact match reported only as a strict, conservative lower bound.
@@ -464,14 +591,22 @@ Taken together, the results show that framework-grounded prompt engineering reac
 \section{Limitations}
 \label{sec:limitations}
 
-Several limitations bound the scope of our conclusions. First, the gold set is small: $115$ items, with a number of concepts represented by only three examples each. Per-concept accuracies for these rare categories are therefore high-variance point estimates, and small absolute changes should not be over-interpreted. Second, all generation uses a single open-weight model family; while the external judge is from the same family at a larger scale, we do not test whether the findings transfer to other model families, and using a same-family judge may understate cross-family disagreement. Third, our semantic evaluation relies on an LLM judge. We quantify and partly correct for self-grading bias by using an independent, larger judge, but we do not yet validate either judge against expert human ratings, so the absolute alignment scores should be read as model-based estimates rather than ground truth. Fourth, the evaluation scores each stage in isolation and on single-facet indicators; it does not measure end-to-end behavior on broad or compound indicators, nor downstream data-quality outcomes such as respondent comprehension or measurement validity. Finally, the gold set and prompts are English-only, and the framework's concept and structure taxonomy, though general in intent, is applied here within that single-language setting.
+Several limitations bound the scope of our conclusions, and we state the most serious one first.
+
+\emph{All reported numbers are in-sample.} Every prompt in this paper was written or revised by inspecting errors on the same items the results are computed over. Runs~1 through~6 additionally quoted fifteen gold items verbatim, with their labels, as worked examples, and Run~6 wrote gold structure codes into the injected reference file. We measured the effect of the first of these directly (Table~\ref{tab:leakage}): the quoted items are answered correctly on all fifteen, against $75.5\%$ on the rest. Arms R7b and R7c remove the verbatim items and are the configurations we report as headline results. But removing verbatim items does not make the evaluation held-out. The \emph{rules} in the R7c prompt, including the deontic-subject rule that produces its largest gain, were still written by a person who had seen these items and their labels. The figures in this paper should therefore be read as measures of fit to a taxonomy on a known sample, not as estimates of generalization to new indicators. Establishing the latter requires items annotated after the prompts were frozen, which we did not have; we regard this as the most important piece of future work rather than a detail.
+
+\emph{Gold-set corrections.} The set was built with $115$ items and corrected to $113$ during this work. Two items were exact duplicates of other rows, identical in indicator, concept and structure; one of the two was also among the fifteen items quoted in the prompt, so retaining it counted a memorized item twice. Separately, the gold labels used three different notations for the single concept Evaluative belief, and the injected reference file licensed a fourth. We standardized on the notation-derived form, which \emph{lowers} our reported structure accuracy by about one point, because the model consistently produces one of the discarded variants and is now scored wrong on all three such items (Table~\ref{tab:perconcept}). We note that standardizing in the opposite direction would have raised the reported figure by moving the reference toward what our own prompt teaches, which is why we did not do it.
+
+\emph{No inter-annotator agreement.} The gold set was constructed by expert annotation, but we do not report how many annotators contributed, their agreement, or how disagreements were resolved, and no subset was double-annotated. Every objective metric in this paper is exact match against these labels. This matters most exactly where the model fails: the Norms, Policies and Values cluster involves distinctions that expert annotators also find difficult, so an unknown share of the errors we attribute to the model may be label disagreements. A double-annotated subset with a reported $\kappa$ would settle this and should accompany any future version of the gold set.
+
+The remaining limitations are narrower. First, the gold set is small: $113$ items, with fourteen of the twenty-two concepts represented by only three examples each. We report these cells as counts rather than percentages for that reason, and the targeted gain in Section~\ref{sec:discussion}, though statistically significant over the full item set, rests on five items. Second, all generation uses a single open-weight model family; the judges are drawn from the same family, so cross-family disagreement may be understated. Third, our semantic evaluation relies on an LLM judge. Our two-by-two control finds no self-preference bias, but it does show that the smaller judge barely uses its rating scale, and we do not validate either judge against expert human ratings; the absolute alignment scores should therefore be read as model-based estimates rather than ground truth. The judge substitution is a further confound: because the 72B checkpoint became unavailable partway through, the difference between the two external judges cannot be decomposed into model scale, model family, and reasoning-mode effects. Fourth, the evaluation scores each stage in isolation and on single-facet indicators; it does not measure end-to-end behavior on broad or compound indicators, nor downstream data-quality outcomes such as respondent comprehension or measurement validity. Finally, the gold set and prompts are English-only, and the framework's concept and structure taxonomy, though general in intent, is applied here within that single-language setting.
 
 \section{Conclusion and Future Work}
 \label{sec:conclusion}
 
-We presented a framework-grounded, two-agent pipeline that turns raw indicators into survey items by following a formal three-step design method, using constrained decoding to keep every output inside the concept-and-structure taxonomy. Evaluated against a $115$-item expert gold set with a dual protocol that separates framework adherence from semantic fidelity, the pipeline reaches $76.5\%$ concept accuracy and $75.7\%$ structure accuracy through prompt engineering alone, with both labels jointly correct on $73.9\%$ of items and near-ceiling question quality confirmed by an independent judge ($4.56/5$ assertion-to-question alignment, all items at least $4$). Along the way we showed that exact string match badly understates generative question quality, and we quantified a roughly $0.43$-point self-grading bias that motivates reporting an independent judge.
+We presented a framework-grounded, two-agent pipeline that turns raw indicators into survey items by following a formal three-step design method, using constrained decoding to keep every output inside the concept-and-structure taxonomy. Evaluated against a $113$-item expert gold set with a dual protocol that separates framework adherence from semantic fidelity, the pipeline reaches $85.0\%$ concept accuracy and $79.6\%$ structure accuracy through prompt engineering alone, with both labels jointly correct on $79.6\%$ of items and strong question quality confirmed by an independent judge. Reporting Wilson intervals and paired McNemar tests throughout, we find that only two of six run-to-run transitions are individually significant, and that a substantial share of the largest early gain is attributable to a change in the scoring normalizer rather than to the model; we regard this as the more honest characterization of what iterative prompt engineering delivers. Along the way we showed that exact string match badly understates generative question quality, that a two-by-two generator-by-judge control finds no self-preference bias but does reveal a self-judge which uses only two points of a five-point scale, and that a $3.5\times$ larger generator performs \emph{worse} on the identical prompt, indicating that the remaining errors are a matter of framework adherence rather than of model capacity.
 
-Three directions follow directly from the error analysis. The most immediate is a targeted prompt fix for the concepts, adding worked examples that separate Norms from Values to repair the regression introduced by the final structure pass, and, more broadly, examples for Policies and Causal relationship, the categories that dominate the residual errors. Second, the semantic evaluation should be extended by re-scoring the best configuration with the external judge and by validating the judge against a modest set of expert human ratings, so that the alignment scores can be calibrated. Third, parameter-efficient fine-tuning on the rare concepts is a natural refinement once prompt-based gains plateau, though our results indicate it is optional rather than necessary for a strong baseline. More broadly, the combination of taxonomy-grounded generation and a dual, bias-aware evaluation offers a reusable template for applying large language models to other structured measurement tasks in computational social science.
+Four directions follow from the analysis, ordered by how much they would change what can be claimed. The first is a genuinely held-out test set: indicators annotated after the prompts are frozen, which is the only way to convert the figures reported here from measures of fit into estimates of generalization. A double-annotated subset with a reported agreement coefficient should accompany it, so that model errors can be separated from label disagreements on exactly the categories where both are most likely. Second, the judge should be validated against expert human ratings. Our two-by-two control establishes that a small judge is unreliable, but it cannot establish that the larger one is correct; without human anchoring, both judges' absolute scores remain model-based estimates. An external, methodologically-native instrument such as a survey-quality predictor from the same measurement tradition would be a stronger reference still, because it does not share the failure modes of an LLM evaluator. Third, answer-option generation, the weakest component we measured at $61.1\%$ response-type agreement, has received no prompt work at all and is the obvious next target; a smaller pending fix is to align the prompt's structure tables with the standardized Evaluative-belief notation, which our current prompts still contradict. Fourth, parameter-efficient fine-tuning on the rare concepts is a natural refinement once prompt-based gains plateau, though our finding that a $3.5\times$ larger generator performs \emph{worse} on the identical prompt suggests that framework adherence responds to how the taxonomy is expressed rather than to model capacity, and that fine-tuning is optional rather than necessary for a strong baseline. More broadly, the combination of taxonomy-grounded generation and a dual, bias-aware evaluation offers a reusable template for applying large language models to other structured measurement tasks in computational social science.
 
 \appendices
 
@@ -516,8 +651,10 @@ $ti$ & time expression \\
 $pl$ & place expression \\
 $qu$ & quantity expression \\
 $pro$ & procedure expression \\
+$v$ & value or ideal as subject \\
+$(e)$ & evaluative qualifier on the predicator, as in $xP(e)y$ \\
 $y$ & object / second entity \\
-$z$ & comparison referent \\
+$z$ & optional comparison referent; licensed for Preference but not exercised by any gold item \\
 \hline
 \end{tabular}
 \end{table}
@@ -532,43 +669,45 @@ Both prompts begin with the dynamically injected taxonomy block (Section~\ref{se
 
 \section{Complete Per-Concept Results}
 \label{app:perconcept}
-Table~\ref{tab:perconcept} reports concept and structure accuracy for all $22$ concepts at the best configuration (Run~6), with gold-set counts.
+Table~\ref{tab:perconcept} reports concept and structure accuracy for all $22$ concepts at the best configuration (Run~7c), as raw counts. Counts rather than percentages are used deliberately: fourteen of the twenty-two concepts have $n{=}3$, where a single item moves the percentage by $33$ points and a Wilson interval spans most of the unit interval.
 
 \begin{table}[ht]
-\caption{Per-Concept Accuracy at the Best Configuration (Run 6)}
+\caption{Per-Concept Accuracy at the Best Configuration (Run 7c), as Counts}
 \label{tab:perconcept}
 \centering
 \footnotesize
 \begin{tabular}{l r r r}
 \hline
-\textbf{Concept} & \textbf{n} & \textbf{Concept \%} & \textbf{Structure \%} \\
+\textbf{Concept} & \textbf{n} & \textbf{Concept} & \textbf{Structure} \\
 \hline
 \multicolumn{4}{l}{\emph{Subjective}} \\
-Evaluation & 20 & 80.0 & 80.0 \\
-Preference & 10 & 80.0 & 80.0 \\
-Cognitive judgement & 7 & 71.4 & 71.4 \\
-Action tendencies & 5 & 80.0 & 80.0 \\
-Feelings & 4 & 75.0 & 75.0 \\
-Importance & 3 & 100.0 & 100.0 \\
-Values & 3 & 100.0 & 66.7 \\
-Causal relationship & 3 & 33.3 & 33.3 \\
-Similarity relationship & 3 & 100.0 & 66.7 \\
-Norms & 3 & 0.0 & 0.0 \\
-Policies & 3 & 0.0 & 66.7 \\
-Rights & 3 & 100.0 & 100.0 \\
-Expectations of future events & 3 & 100.0 & 100.0 \\
-Evaluative belief & 3 & 66.7 & 33.3 \\
+Evaluation & 19 & 17/19 & 17/19 \\
+Preference & 9 & 7/9 & 7/9 \\
+Cognitive judgement & 7 & 5/7 & 5/7 \\
+Action tendencies & 5 & 4/5 & 4/5 \\
+Feelings & 4 & 3/4 & 3/4 \\
+Causal relationship & 3 & 3/3 & 3/3 \\
+Evaluative belief & 3 & 3/3 & 0/3 \\
+Expectations of future events & 3 & 3/3 & 3/3 \\
+Importance & 3 & 3/3 & 3/3 \\
+Norms & 3 & 3/3 & 3/3 \\
+Policies & 3 & 2/3 & 2/3 \\
+Rights & 3 & 3/3 & 3/3 \\
+Similarity relationship & 3 & 3/3 & 2/3 \\
+Values & 3 & 3/3 & 2/3 \\
 \hline
 \multicolumn{4}{l}{\emph{Objective}} \\
-Demographics & 15 & 80.0 & 80.0 \\
-Behaviour & 7 & 71.4 & 71.4 \\
-Events & 5 & 60.0 & 60.0 \\
-Knowledge & 3 & 100.0 & 100.0 \\
-Time & 3 & 100.0 & 100.0 \\
-Place & 3 & 100.0 & 100.0 \\
-Quantities & 3 & 100.0 & 100.0 \\
-Procedures & 3 & 66.7 & 66.7 \\
+Demographics & 15 & 13/15 & 13/15 \\
+Behaviour & 7 & 5/7 & 4/7 \\
+Events & 5 & 2/5 & 2/5 \\
+Knowledge & 3 & 3/3 & 3/3 \\
+Place & 3 & 3/3 & 3/3 \\
+Procedures & 3 & 2/3 & 2/3 \\
+Quantities & 3 & 3/3 & 3/3 \\
+Time & 3 & 3/3 & 3/3 \\
 \hline
+\multicolumn{4}{l}{\scriptsize Evaluative belief scores $0/3$ on structure because the gold notation for}\\
+\multicolumn{4}{l}{\scriptsize that concept was standardized after the run; see Section~\ref{sec:limitations}.}
 \end{tabular}
 \end{table}
 
@@ -614,7 +753,7 @@ Length of engagement & Time $\to$ Demographics & 2 & 5 \\
 
 \section{Reproduction Details}
 \label{app:repro}
-Generation and judging use an OpenAI-compatible inference server hosting the open-weight models locally on GPU. The generator runs on a single high-memory GPU; the 72B external judge runs on two GPUs with tensor parallelism. Decoding is deterministic (temperature $0$, up to $1024$ tokens per call). For reliable structured output from the reasoning-capable base model, thinking mode is disabled and an explicit instruction to emit only JSON is appended to each request; both stages use schema-guided JSON decoding, and the assertion stage additionally constrains the concept field to the enumerated taxonomy. On the target hardware the server required a non-default attention backend and eager execution to run stably; the exact backend flags, library-path ordering, and launch scripts are provided with the code release. Runs are configuration-driven, so fixing the configuration file and model version reproduces the reported outputs, and each run additionally exports a per-item prediction table together with the objective summary and confusion matrices.
+Generation and judging use an OpenAI-compatible inference server hosting the open-weight models locally on GPU. The generator (\texttt{Qwen/Qwen3.5-9B}) runs on a single high-memory GPU; the external judges (\texttt{Qwen/Qwen2.5-72B-Instruct}, and \texttt{Qwen/Qwen3-32B} after the former was removed from the shared model store) run on two GPUs with tensor parallelism. Decoding is deterministic (temperature $0$, up to $1024$ tokens per call). For reliable structured output from the reasoning-capable base model, thinking mode is disabled and an explicit instruction to emit only JSON is appended to each request; both stages use schema-guided JSON decoding, and the assertion stage additionally constrains the concept field to the enumerated taxonomy. On the target hardware the server required a non-default attention backend and eager execution to run stably; the exact backend flags, library-path ordering, and launch scripts are provided with the code release. Runs are configuration-driven, so fixing the configuration file and model version reproduces the reported outputs, and each run additionally exports a per-item prediction table together with the objective summary and confusion matrices.
 
 
 

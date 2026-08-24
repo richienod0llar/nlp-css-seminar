@@ -4,7 +4,7 @@
   "leakage_by_arm": {
     "v6repro": {
       "prompt": "assertion_developer.md",
-      "n_leaked_gold_items": 16,
+      "n_leaked_gold_items": 15,
       "leaked_ids": [
         1,
         3,
@@ -16,7 +16,6 @@
         49,
         55,
         65,
-        71,
         95,
         101,
         103,
@@ -25,38 +24,38 @@
       ],
       "concept_in_prompt": {
         "pct": 100.0,
-        "k": 16,
-        "n": 16,
+        "k": 15,
+        "n": 15,
         "ci95": [
-          80.6,
+          79.6,
           100.0
         ]
       },
       "concept_held_out": {
-        "pct": 75.8,
-        "k": 75,
-        "n": 99,
+        "pct": 75.5,
+        "k": 74,
+        "n": 98,
         "ci95": [
-          66.5,
-          83.1
+          66.1,
+          83.0
         ]
       },
       "both_in_prompt": {
-        "pct": 100.0,
-        "k": 16,
-        "n": 16,
+        "pct": 93.3,
+        "k": 14,
+        "n": 15,
         "ci95": [
-          80.6,
-          100.0
+          70.2,
+          98.8
         ]
       },
       "both_held_out": {
-        "pct": 71.7,
-        "k": 71,
-        "n": 99,
+        "pct": 71.4,
+        "k": 70,
+        "n": 98,
         "ci95": [
-          62.2,
-          79.6
+          61.8,
+          79.4
         ]
       }
     },
@@ -66,22 +65,22 @@
       "leaked_ids": [],
       "concept_in_prompt": null,
       "concept_held_out": {
-        "pct": 78.3,
-        "k": 90,
-        "n": 115,
+        "pct": 77.9,
+        "k": 88,
+        "n": 113,
         "ci95": [
-          69.9,
-          84.8
+          69.4,
+          84.5
         ]
       },
       "both_in_prompt": null,
       "both_held_out": {
-        "pct": 73.0,
-        "k": 84,
-        "n": 115,
+        "pct": 71.7,
+        "k": 81,
+        "n": 113,
         "ci95": [
-          64.3,
-          80.3
+          62.8,
+          79.2
         ]
       }
     },
@@ -91,22 +90,22 @@
       "leaked_ids": [],
       "concept_in_prompt": null,
       "concept_held_out": {
-        "pct": 85.2,
-        "k": 98,
-        "n": 115,
+        "pct": 85.0,
+        "k": 96,
+        "n": 113,
         "ci95": [
-          77.6,
-          90.6
+          77.2,
+          90.4
         ]
       },
       "both_in_prompt": null,
       "both_held_out": {
-        "pct": 80.9,
-        "k": 93,
-        "n": 115,
+        "pct": 79.6,
+        "k": 90,
+        "n": 113,
         "ci95": [
-          72.7,
-          87.0
+          71.3,
+          86.0
         ]
       }
     }
@@ -114,30 +113,30 @@
   "leakage_split": {
     "all": {
       "concept": {
-        "pct": 85.2,
-        "k": 98,
-        "n": 115,
+        "pct": 85.0,
+        "k": 96,
+        "n": 113,
         "ci95": [
-          77.6,
-          90.6
+          77.2,
+          90.4
         ]
       },
       "structure": {
-        "pct": 80.9,
-        "k": 93,
-        "n": 115,
+        "pct": 79.6,
+        "k": 90,
+        "n": 113,
         "ci95": [
-          72.7,
-          87.0
+          71.3,
+          86.0
         ]
       },
       "both": {
-        "pct": 80.9,
-        "k": 93,
-        "n": 115,
+        "pct": 79.6,
+        "k": 90,
+        "n": 113,
         "ci95": [
-          72.7,
-          87.0
+          71.3,
+          86.0
         ]
       }
     },
@@ -172,42 +171,42 @@
     },
     "held_out": {
       "concept": {
-        "pct": 85.2,
-        "k": 98,
-        "n": 115,
+        "pct": 85.0,
+        "k": 96,
+        "n": 113,
         "ci95": [
-          77.6,
-          90.6
+          77.2,
+          90.4
         ]
       },
       "structure": {
-        "pct": 80.9,
-        "k": 93,
-        "n": 115,
+        "pct": 79.6,
+        "k": 90,
+        "n": 113,
         "ci95": [
-          72.7,
-          87.0
+          71.3,
+          86.0
         ]
       },
       "both": {
-        "pct": 80.9,
-        "k": 93,
-        "n": 115,
+        "pct": 79.6,
+        "k": 90,
+        "n": 113,
         "ci95": [
-          72.7,
-          87.0
+          71.3,
+          86.0
         ]
       }
     }
   },
   "conditional_structure": {
     "given_concept_correct": {
-      "pct": 94.9,
-      "k": 93,
-      "n": 98,
+      "pct": 93.8,
+      "k": 90,
+      "n": 96,
       "ci95": [
-        88.6,
-        97.8
+        87.0,
+        97.1
       ]
     },
     "given_concept_wrong": {
@@ -223,267 +222,267 @@
   "per_run": {
     "Run 1": {
       "concept": {
-        "pct": 57.4,
-        "k": 66,
-        "n": 115,
+        "pct": 65.5,
+        "k": 74,
+        "n": 113,
         "ci95": [
-          48.3,
-          66.0
+          56.3,
+          73.6
         ]
       },
       "structure": {
         "pct": 51.3,
-        "k": 59,
-        "n": 115,
+        "k": 58,
+        "n": 113,
         "ci95": [
-          42.3,
-          60.2
+          42.2,
+          60.3
         ]
       },
       "both": {
-        "pct": 42.6,
-        "k": 49,
-        "n": 115,
+        "pct": 47.8,
+        "k": 54,
+        "n": 113,
         "ci95": [
-          34.0,
-          51.7
+          38.8,
+          56.9
         ]
       },
       "question_exact_match": {
-        "pct": 20.0,
+        "pct": 20.4,
         "k": 23,
-        "n": 115,
+        "n": 113,
         "ci95": [
-          13.7,
-          28.2
+          14.0,
+          28.7
         ]
       }
     },
     "Run 2": {
       "concept": {
-        "pct": 69.6,
-        "k": 80,
-        "n": 115,
+        "pct": 69.0,
+        "k": 78,
+        "n": 113,
         "ci95": [
-          60.6,
-          77.2
+          60.0,
+          76.8
         ]
       },
       "structure": {
-        "pct": 55.7,
-        "k": 64,
-        "n": 115,
+        "pct": 54.0,
+        "k": 61,
+        "n": 113,
         "ci95": [
-          46.5,
-          64.4
+          44.8,
+          62.9
         ]
       },
       "both": {
-        "pct": 53.0,
-        "k": 61,
-        "n": 115,
+        "pct": 51.3,
+        "k": 58,
+        "n": 113,
         "ci95": [
-          44.0,
-          61.9
+          42.2,
+          60.3
         ]
       },
       "question_exact_match": {
-        "pct": 20.0,
+        "pct": 20.4,
         "k": 23,
-        "n": 115,
+        "n": 113,
         "ci95": [
-          13.7,
-          28.2
+          14.0,
+          28.7
         ]
       }
     },
     "Run 3": {
       "concept": {
-        "pct": 75.7,
-        "k": 87,
-        "n": 115,
+        "pct": 75.2,
+        "k": 85,
+        "n": 113,
         "ci95": [
-          67.1,
-          82.6
+          66.5,
+          82.3
         ]
       },
       "structure": {
-        "pct": 62.6,
-        "k": 72,
-        "n": 115,
+        "pct": 61.1,
+        "k": 69,
+        "n": 113,
         "ci95": [
-          53.5,
-          70.9
+          51.8,
+          69.5
         ]
       },
       "both": {
-        "pct": 60.9,
-        "k": 70,
-        "n": 115,
+        "pct": 59.3,
+        "k": 67,
+        "n": 113,
         "ci95": [
-          51.7,
-          69.3
+          50.1,
+          67.9
         ]
       },
       "question_exact_match": {
-        "pct": 18.3,
+        "pct": 18.6,
         "k": 21,
-        "n": 115,
+        "n": 113,
         "ci95": [
-          12.3,
-          26.3
+          12.5,
+          26.7
         ]
       }
     },
     "Run 6": {
       "concept": {
-        "pct": 76.5,
-        "k": 88,
-        "n": 115,
+        "pct": 76.1,
+        "k": 86,
+        "n": 113,
         "ci95": [
-          68.0,
-          83.3
+          67.5,
+          83.0
         ]
       },
       "structure": {
-        "pct": 75.7,
-        "k": 87,
-        "n": 115,
+        "pct": 74.3,
+        "k": 84,
+        "n": 113,
         "ci95": [
-          67.1,
-          82.6
+          65.6,
+          81.5
         ]
       },
       "both": {
-        "pct": 73.9,
-        "k": 85,
-        "n": 115,
+        "pct": 72.6,
+        "k": 82,
+        "n": 113,
         "ci95": [
-          65.2,
-          81.1
+          63.7,
+          79.9
         ]
       },
       "question_exact_match": {
-        "pct": 17.4,
+        "pct": 17.7,
         "k": 20,
-        "n": 115,
+        "n": 113,
         "ci95": [
-          11.5,
-          25.3
+          11.8,
+          25.8
         ]
       }
     },
     "v6repro": {
       "concept": {
-        "pct": 79.1,
-        "k": 91,
-        "n": 115,
+        "pct": 78.8,
+        "k": 89,
+        "n": 113,
         "ci95": [
-          70.8,
-          85.6
+          70.3,
+          85.3
         ]
       },
       "structure": {
-        "pct": 77.4,
-        "k": 89,
-        "n": 115,
+        "pct": 76.1,
+        "k": 86,
+        "n": 113,
         "ci95": [
-          68.9,
-          84.1
+          67.5,
+          83.0
         ]
       },
       "both": {
-        "pct": 75.7,
-        "k": 87,
-        "n": 115,
+        "pct": 74.3,
+        "k": 84,
+        "n": 113,
         "ci95": [
-          67.1,
-          82.6
+          65.6,
+          81.5
         ]
       },
       "question_exact_match": {
-        "pct": 20.0,
+        "pct": 20.4,
         "k": 23,
-        "n": 115,
+        "n": 113,
         "ci95": [
-          13.7,
-          28.2
+          14.0,
+          28.7
         ]
       }
     },
     "v7a": {
       "concept": {
-        "pct": 78.3,
-        "k": 90,
-        "n": 115,
+        "pct": 77.9,
+        "k": 88,
+        "n": 113,
         "ci95": [
-          69.9,
-          84.8
+          69.4,
+          84.5
         ]
       },
       "structure": {
-        "pct": 74.8,
-        "k": 86,
-        "n": 115,
+        "pct": 73.5,
+        "k": 83,
+        "n": 113,
         "ci95": [
-          66.1,
-          81.8
+          64.6,
+          80.7
         ]
       },
       "both": {
-        "pct": 73.0,
-        "k": 84,
-        "n": 115,
+        "pct": 71.7,
+        "k": 81,
+        "n": 113,
         "ci95": [
-          64.3,
-          80.3
+          62.8,
+          79.2
         ]
       },
       "question_exact_match": {
-        "pct": 20.0,
+        "pct": 20.4,
         "k": 23,
-        "n": 115,
+        "n": 113,
         "ci95": [
-          13.7,
-          28.2
+          14.0,
+          28.7
         ]
       }
     },
     "v7b": {
       "concept": {
-        "pct": 85.2,
-        "k": 98,
-        "n": 115,
+        "pct": 85.0,
+        "k": 96,
+        "n": 113,
         "ci95": [
-          77.6,
-          90.6
+          77.2,
+          90.4
         ]
       },
       "structure": {
-        "pct": 80.9,
-        "k": 93,
-        "n": 115,
+        "pct": 79.6,
+        "k": 90,
+        "n": 113,
         "ci95": [
-          72.7,
-          87.0
+          71.3,
+          86.0
         ]
       },
       "both": {
-        "pct": 80.9,
-        "k": 93,
-        "n": 115,
+        "pct": 79.6,
+        "k": 90,
+        "n": 113,
         "ci95": [
-          72.7,
-          87.0
+          71.3,
+          86.0
         ]
       },
       "question_exact_match": {
-        "pct": 20.0,
+        "pct": 20.4,
         "k": 23,
-        "n": 115,
+        "n": 113,
         "ci95": [
-          13.7,
-          28.2
+          14.0,
+          28.7
         ]
       }
     }
@@ -491,14 +490,14 @@
   "mcnemar": {
     "Run 1 -> Run 2": {
       "concept_accuracy": {
-        "b": 7,
-        "c": 21,
-        "p": 0.0125
+        "b": 8,
+        "c": 12,
+        "p": 0.5034
       },
       "structure_accuracy": {
         "b": 7,
-        "c": 12,
-        "p": 0.3593
+        "c": 10,
+        "p": 0.6291
       }
     },
     "Run 2 -> Run 3": {
@@ -609,18 +608,18 @@
       ]
     },
     "Evaluation": {
-      "n": 20,
-      "concept": "18/20",
-      "structure": "18/20",
+      "n": 19,
+      "concept": "17/19",
+      "structure": "17/19",
       "concept_ci95": [
-        69.9,
-        97.2
+        68.6,
+        97.1
       ]
     },
     "Evaluative belief": {
       "n": 3,
       "concept": "3/3",
-      "structure": "1/3",
+      "structure": "0/3",
       "concept_ci95": [
         43.8,
         100.0
@@ -699,12 +698,12 @@
       ]
     },
     "Preference": {
-      "n": 10,
-      "concept": "8/10",
-      "structure": "8/10",
+      "n": 9,
+      "concept": "7/9",
+      "structure": "7/9",
       "concept_ci95": [
-        49.0,
-        94.3
+        45.3,
+        93.7
       ]
     },
     "Procedures": {
@@ -764,130 +763,131 @@
   },
   "run1_rescored_under_current_normalizer": {
     "as_reported": {
-      "pct": 57.4,
-      "k": 66,
-      "n": 115,
+      "pct": 57.5,
+      "k": 65,
+      "n": 113,
       "ci95": [
         48.3,
-        66.0
+        66.2
       ]
     },
     "rescored": {
-      "pct": 65.2,
-      "k": 75,
-      "n": 115,
+      "pct": 65.5,
+      "k": 74,
+      "n": 113,
       "ci95": [
-        56.1,
-        73.3
+        56.3,
+        73.6
       ]
     },
-    "delta_pp_from_normalizer": 7.8,
-    "run2_total_delta_pp": 12.2
+    "delta_pp_from_normalizer": 8.0,
+    "run2_total_delta_pp": 11.5,
+    "note": "Run 1 -> Run 2 was published as a prompt-engineering gain. Once both runs are scored under the same normalizer the paired test is no longer significant, so most of that gain was the spelling/normalisation fix."
   },
   "baselines": {
     "majority_class": {
       "label": "Evaluation",
-      "pct": 17.4,
-      "k": 20,
-      "n": 115,
+      "pct": 16.8,
+      "k": 19,
+      "n": 113,
       "ci95": [
-        11.5,
-        25.3
+        11.0,
+        24.8
       ]
     },
     "lexical_1nn_concept": {
-      "pct": 33.9,
-      "k": 39,
-      "n": 115,
+      "pct": 32.7,
+      "k": 37,
+      "n": 113,
       "ci95": [
-        25.9,
-        43.0
+        24.8,
+        41.8
       ]
     },
     "lexical_1nn_structure": {
-      "pct": 32.2,
-      "k": 37,
-      "n": 115,
+      "pct": 31.0,
+      "k": 35,
+      "n": 113,
       "ci95": [
-        24.3,
-        41.2
+        23.2,
+        40.0
       ]
     }
   },
   "judge": {
-    "mean_self_ia": 4.51,
-    "mean_ext_ia": 4.5,
-    "pearson_r_ia": 0.559,
-    "exact_agreement_ia_pct": 60.0,
+    "mean_self_ia": 4.5,
+    "mean_ext_ia": 4.51,
+    "pearson_r_ia": 0.568,
+    "exact_agreement_ia_pct": 61.1,
     "self_ia_gap_correct_minus_wrong": 0.39,
-    "ext_ia_gap_correct_minus_wrong": 0.29
+    "ext_ia_gap_correct_minus_wrong": 0.3
   },
   "judge_2x2": {
     "gen9b/judge32b": {
       "mean_ia": 4.43,
       "mean_aq": 4.97,
-      "n_scored_ia": 115,
-      "n_rows": 115,
+      "n_scored_ia": 113,
+      "n_rows": 113,
       "ia_distribution": {
         "2": 2,
         "3": 15,
-        "4": 30,
+        "4": 28,
         "5": 68
       },
       "distinct_ia_values": 4
     },
     "gen9b/judge9b": {
-      "mean_ia": 4.49,
+      "mean_ia": 4.48,
       "mean_aq": 5.0,
-      "n_scored_ia": 112,
-      "n_rows": 115,
+      "n_scored_ia": 110,
+      "n_rows": 113,
       "ia_distribution": {
         "1": 2,
         "2": 16,
         "4": 1,
-        "5": 93
+        "5": 91
       },
       "distinct_ia_values": 4
     },
     "gen32b/judge32b": {
-      "mean_ia": 4.38,
+      "mean_ia": 4.39,
       "mean_aq": 4.95,
-      "n_scored_ia": 115,
-      "n_rows": 115,
+      "n_scored_ia": 113,
+      "n_rows": 113,
       "ia_distribution": {
         "2": 2,
         "3": 14,
-        "4": 37,
+        "4": 35,
         "5": 62
       },
       "distinct_ia_values": 4
     },
     "gen32b/judge9b": {
-      "mean_ia": 4.5,
+      "mean_ia": 4.49,
       "mean_aq": 5.0,
-      "n_scored_ia": 114,
-      "n_rows": 115,
+      "n_scored_ia": 112,
+      "n_rows": 113,
       "ia_distribution": {
         "1": 1,
         "2": 17,
         "3": 1,
-        "5": 95
+        "5": 93
       },
       "distinct_ia_values": 4
     }
   },
   "judge_effects": {
     "self_preference_9b": -0.01,
-    "self_preference_32b": -0.05,
-    "judge_leniency_9b_minus_32b_on_gen9b": 0.06
+    "self_preference_32b": -0.04,
+    "judge_leniency_9b_minus_32b_on_gen9b": 0.05
   },
   "judge_swap": {
     "qwen3_32b": {
-      "mean_ia": 4.5,
+      "mean_ia": 4.51,
       "ia_distribution": {
         "2": 1,
         "3": 12,
-        "4": 30,
+        "4": 28,
         "5": 72
       },
       "distinct_ia_values": 4
@@ -898,7 +898,7 @@
         "1": 1,
         "2": 4,
         "3": 22,
-        "4": 45,
+        "4": 43,
         "5": 43
       },
       "distinct_ia_values": 5
@@ -908,59 +908,59 @@
   "generator_comparison": {
     "gen9b_v7b": {
       "concept": {
-        "pct": 85.2,
-        "k": 98,
-        "n": 115,
+        "pct": 85.0,
+        "k": 96,
+        "n": 113,
         "ci95": [
-          77.6,
-          90.6
+          77.2,
+          90.4
         ]
       },
       "structure": {
-        "pct": 80.9,
-        "k": 93,
-        "n": 115,
+        "pct": 79.6,
+        "k": 90,
+        "n": 113,
         "ci95": [
-          72.7,
-          87.0
+          71.3,
+          86.0
         ]
       },
       "both": {
-        "pct": 80.9,
-        "k": 93,
-        "n": 115,
+        "pct": 79.6,
+        "k": 90,
+        "n": 113,
         "ci95": [
-          72.7,
-          87.0
+          71.3,
+          86.0
         ]
       }
     },
     "gen32b_v7b": {
       "concept": {
-        "pct": 77.4,
-        "k": 89,
-        "n": 115,
+        "pct": 77.0,
+        "k": 87,
+        "n": 113,
         "ci95": [
-          68.9,
-          84.1
+          68.4,
+          83.8
         ]
       },
       "structure": {
-        "pct": 69.6,
-        "k": 80,
-        "n": 115,
+        "pct": 68.1,
+        "k": 77,
+        "n": 113,
         "ci95": [
-          60.6,
-          77.2
+          59.1,
+          76.0
         ]
       },
       "both": {
-        "pct": 69.6,
-        "k": 80,
-        "n": 115,
+        "pct": 68.1,
+        "k": 77,
+        "n": 113,
         "ci95": [
-          60.6,
-          77.2
+          59.1,
+          76.0
         ]
       }
     },
@@ -972,30 +972,30 @@
   },
   "answer_options": {
     "response_type_agreement": {
-      "pct": 61.7,
-      "k": 71,
-      "n": 115,
+      "pct": 61.1,
+      "k": 69,
+      "n": 113,
       "ci95": [
-        52.6,
-        70.1
+        51.8,
+        69.5
       ]
     },
     "gold_distribution": {
-      "ordinal": 50,
+      "ordinal": 49,
       "nominal": 31,
-      "open": 28,
+      "open": 27,
       "binary": 4,
       "ranked": 2
     },
     "pred_distribution": {
-      "ordinal": 65,
-      "open": 38,
+      "ordinal": 64,
+      "open": 37,
       "nominal": 12
     }
   },
   "question_format": {
     "distribution": {
-      "direct interrogative (with wh word)": 115
+      "direct interrogative (with wh word)": 113
     },
     "distinct_values": 1
   }

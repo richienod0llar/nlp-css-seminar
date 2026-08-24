@@ -23,6 +23,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import pandas as pd
 
+from src.sig.gold_fixes import EXCLUDED_EXAMPLE_IDS, apply_gold_corrections
 from src.sig.normalize import concepts_match, extract_structure_code, structures_match
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -195,7 +196,15 @@ def main() -> None:
 
     gold = pd.read_excel(ROOT / "data" / "gold_set.xlsx")
     valid_concepts = sorted(set(gold["basic_concept"]))
-    runs = {label: pd.read_csv(path) for label, path in RUNS.items() if path.exists()}
+    # Reports on disk were scored against the uncorrected 115-item gold set.
+    # Replay the corrections so every run is measured on the same 113 items.
+    # Reports on disk were scored against the uncorrected 115-item gold set.
+    # Keep BOTH: `raw_runs` preserves each run's accuracy flags exactly as they
+    # were published (W5 measures the normalizer fix against them), while `runs`
+    # replays the gold corrections so every run is compared on the same 113
+    # items under today's normalizer.
+    raw_runs = {label: pd.read_csv(path) for label, path in RUNS.items() if path.exists()}
+    runs = {label: apply_gold_corrections(df, gold) for label, df in raw_runs.items()}
     best = runs[BEST]
     leak_ids = fewshot_gold_ids(gold, RUN_PROMPTS.get(BEST, DEFAULT_PROMPT))
     report: dict = {"fewshot_gold_ids": leak_ids, "best_run": BEST}
@@ -271,17 +280,23 @@ def main() -> None:
     }
 
     # --- W5: decompose Run 2 (spelling normalizer vs prompt work) ----------
-    r1 = runs["Run 1"]
-    r1_rescored = rescore(r1, valid_concepts)
+    # Compare like with like: restrict the as-published flags to the same 113
+    # items, so the only difference left is the normalizer itself.
+    keep = ~raw_runs["Run 1"]["example_id"].isin(EXCLUDED_EXAMPLE_IDS)
+    r1_as_published = raw_runs["Run 1"].loc[keep, "concept_accuracy"].astype(bool)
+    r2_as_published = raw_runs["Run 2"].loc[
+        ~raw_runs["Run 2"]["example_id"].isin(EXCLUDED_EXAMPLE_IDS), "concept_accuracy"
+    ].astype(bool)
     report["run1_rescored_under_current_normalizer"] = {
-        "as_reported": rate(r1["concept_accuracy"]),
-        "rescored": rate(r1_rescored["concept_accuracy"]),
+        "as_reported": rate(r1_as_published),
+        "rescored": rate(runs["Run 1"]["concept_accuracy"].astype(bool)),
         "delta_pp_from_normalizer": round(
-            pct(r1_rescored["concept_accuracy"]) - pct(r1["concept_accuracy"]), 1
+            pct(runs["Run 1"]["concept_accuracy"].astype(bool)) - pct(r1_as_published), 1
         ),
-        "run2_total_delta_pp": round(
-            pct(runs["Run 2"]["concept_accuracy"]) - pct(r1["concept_accuracy"]), 1
-        ),
+        "run2_total_delta_pp": round(pct(r2_as_published) - pct(r1_as_published), 1),
+        "note": ("Run 1 -> Run 2 was published as a prompt-engineering gain. Once both "
+                 "runs are scored under the same normalizer the paired test is no longer "
+                 "significant, so most of that gain was the spelling/normalisation fix."),
     }
 
     # --- W6: baselines -----------------------------------------------------
@@ -290,6 +305,7 @@ def main() -> None:
     # --- W3: judge agreement ------------------------------------------------
     if EXT_JUDGE.exists():
         ej = pd.read_csv(EXT_JUDGE)
+        ej = ej[~ej["example_id"].isin(EXCLUDED_EXAMPLE_IDS)]
         pairs = ej.dropna(subset=["indicator_assertion_score", "ext_indicator_assertion_score"])
         correct = pairs["concept_accuracy"].astype(bool)
         report["judge"] = {
@@ -319,6 +335,7 @@ def main() -> None:
         if not path.exists():
             continue
         df = pd.read_csv(path)
+        df = df[~df["example_id"].isin(EXCLUDED_EXAMPLE_IDS)]
         ia = pd.to_numeric(df["ext_indicator_assertion_score"], errors="coerce").dropna()
         aq = pd.to_numeric(df["ext_assertion_question_score"], errors="coerce").dropna()
         cells[f"{gen}/{judge}"] = {
@@ -350,6 +367,7 @@ def main() -> None:
         swap = {}
         for name, path in (("qwen3_32b", EXT_JUDGE), ("qwen2.5_72b", EXT_JUDGE_OLD)):
             df = pd.read_csv(path)
+            df = df[~df["example_id"].isin(EXCLUDED_EXAMPLE_IDS)]
             ia = pd.to_numeric(df["ext_indicator_assertion_score"], errors="coerce").dropna()
             swap[name] = {
                 "mean_ia": round(ia.mean(), 2),
@@ -363,7 +381,7 @@ def main() -> None:
 
     # --- generator comparison: does a bigger GENERATOR help? ---------------
     if GEN32B.exists() and "v7b" in runs:
-        g32 = pd.read_csv(GEN32B)
+        g32 = apply_gold_corrections(pd.read_csv(GEN32B), gold)
         report["generator_comparison"] = {
             "gen9b_v7b": {
                 "concept": rate(runs["v7b"]["concept_accuracy"]),
@@ -402,7 +420,7 @@ def main() -> None:
     ls = report["leakage_split"]
     print(f"Best run: {BEST}  (prompt {RUN_PROMPTS.get(BEST, DEFAULT_PROMPT)})")
     print(f"Few-shot gold items quoted in that prompt: {len(leak_ids)} -> {leak_ids}")
-    print(f"  all 115      concept {ls['all']['concept']['pct']}%  CI {ls['all']['concept']['ci95']}")
+    print(f"  all {ls['all']['concept']['n']:<9} concept {ls['all']['concept']['pct']}%  CI {ls['all']['concept']['ci95']}")
     if leak_ids:
         print(f"  in prompt    concept {ls['in_prompt']['concept']['pct']}%  (n={ls['in_prompt']['concept']['n']})")
         print(f"  held out     concept {ls['held_out']['concept']['pct']}%  CI {ls['held_out']['concept']['ci95']}")

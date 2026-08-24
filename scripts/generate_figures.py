@@ -20,12 +20,14 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import numpy as np
 import pandas as pd
+
 import seaborn as sns
 
 # Project root on path when run as script
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+from src.sig.gold_fixes import EXCLUDED_EXAMPLE_IDS, apply_gold_corrections  # noqa: E402
 from src.sig.normalize import extract_structure_code  # noqa: E402
 
 # ---------------------------------------------------------------------------
@@ -99,28 +101,35 @@ def _save(fig: plt.Figure, out_dir: Path, stem: str, tight: bool = True) -> None
 
 
 def load_run_summaries(baseline_dir: Path) -> pd.DataFrame:
+    """Headline metrics per run, recomputed on the corrected 113-item gold set.
+
+    The eval_summary_*.json files were written at run time against the
+    uncorrected 115-item gold set, so they are NOT used for the accuracy
+    figures -- reading them would put n=115 numbers in the figures and n=113
+    numbers in the text. Only the question-level fields, which the gold
+    corrections do not touch, are still taken from the summary.
+    """
+    gold = pd.read_excel(ROOT / "data" / "gold_set.xlsx")
     rows = []
     for run_id in RUN_ORDER:
         summary_path = baseline_dir / f"eval_summary_vllm_{run_id}.json"
         report_path = baseline_dir / f"eval_report_vllm_{run_id}.csv"
-        if not summary_path.exists():
+        if not report_path.exists():
             continue
-        data = json.loads(summary_path.read_text(encoding="utf-8"))
-        row = {
+        data = json.loads(summary_path.read_text(encoding="utf-8")) if summary_path.exists() else {}
+        df = apply_gold_corrections(pd.read_csv(report_path), gold)
+        concept = df["concept_accuracy"].astype(bool)
+        structure = df["structure_accuracy"].astype(bool)
+        rows.append({
             "run_id": run_id,
             "label": RUN_LABELS.get(run_id, run_id),
-            "concept_accuracy_pct": data.get("concept_accuracy_pct"),
-            "structure_accuracy_pct": data.get("structure_accuracy_pct"),
+            "concept_accuracy_pct": round(concept.mean() * 100, 2),
+            "structure_accuracy_pct": round(structure.mean() * 100, 2),
+            "both_correct_pct": round((concept & structure).mean() * 100, 2),
             "question_non_empty_pct": data.get("question_non_empty_pct"),
             "question_exact_match_pct": data.get("question_exact_match_pct"),
-            "both_correct_pct": data.get("both_correct_pct"),
-        }
-        if row["both_correct_pct"] is None and report_path.exists():
-            df = pd.read_csv(report_path)
-            row["both_correct_pct"] = round(
-                (df["concept_accuracy"] & df["structure_accuracy"]).mean() * 100, 2
-            )
-        rows.append(row)
+            "n_items": len(df),
+        })
     return pd.DataFrame(rows)
 
 
@@ -439,7 +448,7 @@ def fig08_judge_distributions(report_path: Path, out_dir: Path) -> None:
         ax.set_xticks(scores)
         ax.set_xlim(0.5, 5.5)
         ax.legend(loc="upper left", frameon=False, fontsize=7)
-    axes[0].set_ylabel("Number of rows (n=115)")
+    axes[0].set_ylabel(f"Number of rows (n={len(df)})")
     fig.suptitle("LLM-as-judge alignment score distributions", fontweight="bold", y=1.02)
     fig.tight_layout()
     _save(fig, out_dir, "fig08_judge_distributions")
@@ -585,10 +594,64 @@ def fig13_ext_judge_distributions(ext_report_path: Path, out_dir: Path) -> None:
         ax.set_xticks(scores)
         ax.set_xlim(0.5, 5.5)
         ax.legend(loc="upper left", frameon=False, fontsize=7)
-    axes[0].set_ylabel("Number of rows (n=115)")
+    axes[0].set_ylabel(f"Number of rows (n={len(df)})")
     fig.suptitle(f"External judge ({EXT_JUDGE_NAME}) score distributions", fontweight="bold", y=1.02)
     fig.tight_layout()
     _save(fig, out_dir, "fig13_ext_judge_distributions")
+
+
+def fig15_judge_degeneracy(baseline_dir: Path, out_dir: Path) -> None:
+    """The W3 figure: two judges, the SAME generations, wildly different behaviour.
+
+    Means are nearly identical (4.48 vs 4.43), which is exactly why they are the
+    wrong summary. The 9B emits 5s and 2s and almost nothing else; the 32B uses
+    the scale. Plotting them side by side is the whole argument in one panel.
+    """
+    sources = [
+        ("Self-judge (Qwen3.5-9B)",
+         baseline_dir / "eval_report_ext_judge_j9b_on_gen9b_vllm_v7b_20260824_103350_20260824_115228.csv",
+         C_QUESTION),
+        (f"External judge ({EXT_JUDGE_NAME})",
+         baseline_dir / "eval_report_ext_judge_v7b_vllm_v7b_20260824_103350_20260824_112633.csv",
+         C_CONCEPT),
+    ]
+    if not all(path.exists() for _, path, _ in sources):
+        return
+
+    fig, axes = plt.subplots(1, 2, figsize=(6.8, 3.3), sharey=True)
+    scores = list(range(1, 6))
+    for ax, (title, path, color) in zip(axes, sources):
+        df = pd.read_csv(path)
+        df = df[~df["example_id"].isin(EXCLUDED_EXAMPLE_IDS)]
+        ia = pd.to_numeric(df["ext_indicator_assertion_score"], errors="coerce")
+        vals = ia.dropna()
+        counts = vals.round().astype(int).value_counts()
+        heights = [int(counts.get(sc, 0)) for sc in scores]
+        bars = ax.bar(scores, heights, color=color, edgecolor="white", linewidth=0.5)
+        for bar, h in zip(bars, heights):
+            if h:
+                ax.text(bar.get_x() + bar.get_width() / 2, h + 1.5, str(h),
+                        ha="center", fontsize=7)
+        ax.axvline(vals.mean(), color="#333333", linestyle="--", linewidth=1)
+        # "scale points used" reads 4/5 for BOTH judges and hides the finding.
+        # What separates them is the middle of the scale: the 9B jumps straight
+        # from 2 to 5, so mid-scale occupancy is the discriminating statistic.
+        mid = heights[2] + heights[3]  # scores 3 and 4
+        note = (f"mean {vals.mean():.2f}  \u00b7  mid-scale (3\u20134): "
+                f"{mid} of {len(vals)} ({mid / len(vals):.0%})")
+        unparsed = int(ia.isna().sum())
+        if unparsed:
+            note += f"\n{unparsed} unparseable"
+        ax.set_title(title, fontsize=9)
+        ax.set_xlabel(f"Indicator \u2192 assertion score\n{note}", fontsize=8)
+        ax.set_xticks(scores)
+        ax.set_xlim(0.5, 5.5)
+
+    axes[0].set_ylabel("Number of items (n=113)")
+    fig.suptitle("The same 113 generations, judged by two models",
+                 fontweight="bold", y=1.02)
+    fig.tight_layout()
+    _save(fig, out_dir, "fig15_judge_degeneracy")
 
 
 def fig14_exact_match_vs_ext_judge(ext_report_path: Path, out_dir: Path) -> None:
@@ -660,6 +723,7 @@ Generated by `python scripts/generate_figures.py`. Use **PDF** versions in manus
 | `fig12_self_vs_external_judge` | Results (Run 5/7) | Mean self-judge (9B) vs external judge (Qwen3-32B) scores. |
 | `fig13_ext_judge_distributions` | Results (Run 5) | External judge score histograms for IA and AQ. |
 | `fig14_exact_match_vs_ext_judge` | Discussion (Run 5) | Exact match vs external judge on question quality. |
+| `fig15_judge_degeneracy` | Discussion (Run 7, **W3**) | Same 113 generations judged by the 9B and the 32B. Near-identical means, incompatible distributions: the self-judge uses 2 of 5 scale points. |
 
 Pass `--run-id 20260703_180434` for Run 6 objective figures (default). Pass `--judge-run-id 20260625_160020` for judge figures (Run 4). Pass `--ext-judge-report` for Run 5 external judge figures.
 
@@ -740,6 +804,7 @@ def main() -> None:
         fig12_self_vs_external_judge(args.ext_judge_report, args.out_dir)
         fig13_ext_judge_distributions(args.ext_judge_report, args.out_dir)
         fig14_exact_match_vs_ext_judge(args.ext_judge_report, args.out_dir)
+    fig15_judge_degeneracy(args.baseline_dir, args.out_dir)
     write_figures_readme(args.out_dir)
     print("Done. See docs/figures/FIGURES.md for caption guidance.")
 

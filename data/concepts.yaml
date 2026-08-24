@@ -137,8 +137,11 @@ Concepts:
     type: subjective
     structures:
       1: null
-      2: "xPy or xPy_e"
-      3: "xP_e"
+      # Standardised 2026-08-24: gold carried three notations for this one
+      # concept (xPyc, xP(e), xP(e)y) and the YAML licensed a fourth pair
+      # (xPy_e / xP_e). The (e) qualifier is the notation-derived form, so it wins.
+      2: "xP(e)y"
+      3: "xP(e)"
 
   # --Objective variables--
   Behaviour:

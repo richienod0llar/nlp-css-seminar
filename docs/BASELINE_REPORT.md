@@ -2,20 +2,45 @@
 
 **Model:** Qwen3.5-9B (`/dss/dssmcmlfs01/pn25ju/pn25ju-dss-0000/models/Qwen3.5-9B`)  
 **Server:** vLLM 0.23 on LRZ H100 (`scripts/start_vllm.sh`)  
-**Gold set:** 115 rows (`data/gold_set.xlsx`)  
+**Gold set:** **113 rows** (`data/gold_set.xlsx`) — corrected 2026-08-24, see below  
+**External judge:** **Qwen3-32B** (`scripts/start_vllm_judge.sh`) — replaces Qwen2.5-72B-Instruct  
 **Config:** `mock: false`, `enable_thinking: false`, `temperature: 0.0`, `max_tokens: 1024`
 
-Three full eval runs document **prompt engineering** (Runs 1–3). **Run 4** adds self-judge semantic scores. **Run 5** re-scores Run 4 with an external judge (Qwen2.5-72B). **Run 6** applies structure prompt pass 2 and reaches **76.5% concept / 75.7% structure**.
+Three full eval runs document **prompt engineering** (Runs 1–3). **Run 4** adds self-judge semantic scores. **Run 5** re-scores Run 4 with an external judge. **Run 6** applies structure prompt pass 2. **Run 7** is the review-response run: a three-arm prompt ablation, a replacement external judge, and a 2×2 generator×judge design, reaching **85.0% concept / 79.6% structure**.
+
+> ### ⚠️ Gold-set correction (2026-08-24) — read before quoting any number
+>
+> The gold set was corrected from 115 to **113 items**, and one label was changed:
+>
+> 1. **Exact duplicates removed.** Ids 71 and 67 duplicate ids 5 and 29 — identical
+>    indicator, concept *and* structure in both pairs. Id 71 is additionally one of the
+>    16 items quoted verbatim in the v6 prompt, so keeping it double-counted a memorised
+>    item in the headline accuracy.
+> 2. **Evaluative-belief notation standardised.** Gold labelled three items of one concept
+>    three different ways (`xPyc`, `xP(e)`, `xP(e)y`) while `concepts.yaml` licensed a
+>    fourth pair. Standardised on the notation-derived `(e)` form, so id 3 became `xP(e)y`.
+>    The model predicts `xPyc` for all three, so it is now scored **wrong on all three**.
+>    Standardising the other way would have *raised* structure accuracy by ~1.7 pp by
+>    moving gold toward what the prompt already teaches — which is why it was not done.
+>
+> **Every per-run section below reports the numbers as they were published at n=115.**
+> They are kept as a changelog of what was reported at the time. The corrected n=113
+> numbers — which are what the paper should cite — are in
+> [Corrected results (n=113)](#corrected-results-n113) and in `docs/reanalysis.json`,
+> which is the single source of truth. The `eval_summary_*.json` files in
+> `docs/baseline/` are **stale at n=115**; do not quote them.
+>
+> Re-scoring is replayed offline by `src/sig/gold_fixes.py` — no run was repeated on a GPU.
 
 ## Run changelog — what changed between runs
 
 All runs share unless noted:
 
 - **Model:** Qwen3.5-9B via vLLM 0.23 on LRZ H100
-- **Gold set:** 115 rows, **isolated eval** (assertion from indicator; question from gold assertion)
+- **Gold set:** 113 rows after the 2026-08-24 correction (115 in Runs 1–6 as published), **isolated eval** (assertion from indicator; question from gold assertion)
 - **Config:** `mock: false`, `enable_thinking: false`, `temperature: 0.0`, `max_tokens: 1024`
 - **Scoring:** exact match on concept/structure/question after `normalize.py`
-- **Judge:** off in Runs 1–3; **self-judge (9B) in Run 4**; **external judge (72B) in Run 5** on Run 4 predictions
+- **Judge:** off in Runs 1–3; **self-judge (9B) in Run 4**; **external judge (Qwen2.5-72B) in Run 5**; **external judge (Qwen3-32B) + 2×2 generator×judge in Run 7** (the 72B was deleted from the shared store after Run 5)
 
 Git commits: `1fdd4bf` → Run 1; `7fd51fa` → Run 2; `3485c2d` → Run 3/4 code.
 
@@ -209,23 +234,72 @@ Objective metrics unchanged: **75.7%** concept, **62.6%** structure, **18.3%** q
 
 ---
 
+### Run 7 — Review response (`20260824`)
+
+One SLURM allocation (`scripts/run7.sh`, job 5760085) covering every GPU-dependent fix the
+paper review asked for. Three stages, seven output sets.
+
+#### 1. Three-arm prompt ablation — one intervention each
+
+| Arm | Prompt | Change isolated |
+|-----|--------|-----------------|
+| `v6repro` | `assertion_developer.md` | Run 6 prompt, repaired `concepts.yaml` — isolates the YAML fix |
+| `v7a` | `assertion_developer_v7a.md` | Worked examples rewritten so **no gold item appears verbatim** — isolates leakage (W1) |
+| `v7b` | `assertion_developer_v7b.md` | v7a **+ notation-derived Norms/Policies/Causal rule** — the targeted fix (W5) |
+
+`assertion_developer.md` is deliberately **unchanged**, so Run 6 stays reproducible.
+
+#### 2. External judge replaced — Qwen2.5-72B → Qwen3-32B
+
+`Qwen2.5-72B-Instruct` was **deleted from the shared model store** after Run 5 and no
+70B-class model remains anywhere in the project store. `Qwen3-32B` (65.5 GB, dense bf16,
+17/17 shards) is the largest complete instruct model still on disk.
+
+To keep the swap measurable rather than silent, Run 7 re-judges the **same Run 4 predictions**
+the 72B scored, so both instruments can be compared on identical items. `--max-model-len` on
+the judge server was raised 4096 → 8192 because Stage 2 also *generates* on that server and
+the v7b prompt alone is 3573 tokens.
+
+#### 3. 2×2 generator × judge design (W3)
+
+The 32B also generates a full set, then both models judge both generation sets. This
+separates *"a model prefers its own output"* from *"a bigger judge is simply stricter"* —
+the two explanations Run 5 could not distinguish.
+
+#### 4. Infrastructure fix
+
+`stop_server` in `run7.sh` killed the wrapper `bash`, not `vllm serve` (the server scripts
+pipe through `tee`). The orphaned server held ~90 GB and the next stage died with
+`Free memory on device cuda:0 (3.87/93.09 GiB)`. Servers now start via `setsid` in their own
+process group and are signalled as a group; the `sleep 20` drain guess was replaced with
+`wait_gpu_free`, which polls until every GPU is below 5 GB and hard-fails with a process
+listing. `RUN7_SKIP_STAGE1=1` added for resuming without repeating the 25-minute Stage 1.
+
+---
+
 ### Summary: cumulative engineering vs metrics
 
-| Layer | Run 1 | Run 2 | Run 3 | Run 4 | Run 5 | Run 6 |
-|-------|-------|-------|-------|-------|-------|-------|
-| vLLM JSON / thinking off | ✓ | | | | | |
-| Isolated 115-row eval | ✓ | | | | | |
-| Spelling-normalized scoring | | ✓ | | | | |
-| Concept `enum` in guided_json | | ✓ | | | | |
-| Concept disambiguation prompt | | ✓ | | | | |
-| Examples 4–6 (concepts) | | ✓ | | | | |
-| Structure disambiguation table | | | ✓ | | | |
-| Examples 7–9 (structures) | | | ✓ | | | |
-| Question JSON repair | | | ✓ | | | |
-| Confusion matrices / breakdown | | | ✓ | | | |
-| LLM-as-judge scoring | | | (code) | ✓ (self) | ✓ (ext) | |
-| Structure prompt pass 2 | | | | | | ✓ |
-| concepts.yaml gold alignment | | | | | | ✓ |
+| Layer | Run 1 | Run 2 | Run 3 | Run 4 | Run 5 | Run 6 | Run 7 |
+|-------|-------|-------|-------|-------|-------|-------|-------|
+| vLLM JSON / thinking off | ✓ | | | | | | |
+| Isolated eval harness | ✓ | | | | | | |
+| Spelling-normalized scoring | | ✓ | | | | | |
+| Concept `enum` in guided_json | | ✓ | | | | | |
+| Concept disambiguation prompt | | ✓ | | | | | |
+| Examples 4–6 (concepts) | | ✓ | | | | | |
+| Structure disambiguation table | | | ✓ | | | | |
+| Examples 7–9 (structures) | | | ✓ | | | | |
+| Question JSON repair | | | ✓ | | | | |
+| Confusion matrices / breakdown | | | ✓ | | | | |
+| LLM-as-judge scoring | | | (code) | ✓ (self) | ✓ (ext) | | |
+| Structure prompt pass 2 | | | | | | ✓ | |
+| concepts.yaml gold alignment | | | | | | ✓ | |
+| De-leaked worked examples (W1) | | | | | | | ✓ |
+| Notation-derived deontic/causal rule | | | | | | | ✓ |
+| Single-intervention ablation arms | | | | | | | ✓ |
+| External judge → Qwen3-32B | | | | | | | ✓ |
+| 2×2 generator × judge (W3) | | | | | | | ✓ |
+| Gold-set correction (n=113) | | | | | | | ✓ |
 
 | Metric | Run 1 | Run 2 | Run 3 | Run 4 | Run 6 | R1→R6 |
 |--------|-------|-------|-------|-------|-------|--------|
@@ -243,6 +317,44 @@ Objective metrics unchanged: **75.7%** concept, **62.6%** structure, **18.3%** q
 | Ext AQ score ≥ 4 | **100%** (115/115) |
 
 \*Run 4 objective metrics match Run 3 (same generations; judge adds scoring only).
+
+---
+
+## Corrected results (n=113)
+
+**These are the numbers to cite.** Every run re-scored on the corrected 113-item gold set
+under today's normalizer, so all seven are directly comparable. Generated by
+`python scripts/reanalysis.py` → `docs/reanalysis.json`.
+
+| Run | Concept | Structure | Both correct | Question exact |
+|-----|---------|-----------|--------------|----------------|
+| Run 1 — Initial | 65.5% | 51.3% | 47.8% | 20.4% |
+| Run 2 — Prompt tuning | 69.0% | 54.0% | 51.3% | 20.4% |
+| Run 3 — Structure v1 | 75.2% | 61.1% | 59.3% | 18.6% |
+| Run 6 — Structure v2 | 76.1% | 74.3% | 72.6% | 17.7% |
+| Run 7a — `v6repro` | 78.8% | 76.1% | 74.3% | 20.4% |
+| Run 7b — `v7a` (de-leaked) | 77.9% | 73.5% | 71.7% | 20.4% |
+| **Run 7c — `v7b` (+notation rule)** | **85.0%** | **79.6%** | **79.6%** | 20.4% |
+
+### Paired significance (exact McNemar, same items)
+
+| Transition | Concept | Structure |
+|------------|---------|-----------|
+| Run 1 → Run 2 | b=8 c=12 **p=0.503** | b=7 c=10 p=0.629 |
+| Run 2 → Run 3 | b=3 c=10 p=0.092 | b=3 c=11 p=0.057 |
+| Run 3 → Run 6 | b=12 c=13 p=1.0 | b=12 c=27 **p=0.024** |
+| Run 6 → v6repro | b=0 c=3 p=0.25 | b=1 c=3 p=0.625 |
+| v6repro → v7a | b=2 c=1 p=1.0 | b=4 c=1 p=0.375 |
+| **v7a → v7b** | b=2 c=10 **p=0.039** | b=2 c=9 p=0.065 |
+
+Two results here matter more than the headline:
+
+- **The Run 1 → Run 2 gain was mostly a scoring fix, not prompt engineering.** Re-scoring
+  Run 1 under today's normalizer moves it from 57.5% to 65.5% — **8.0 pp of the 11.5 pp
+  gain**. Once both runs are scored the same way the paired test is no longer significant
+  (p=0.503, was p=0.013). The published Run 2 narrative overstates the prompt's contribution.
+- **Only two transitions in the whole project are statistically significant**: the Run 3 → Run 6
+  structure pass, and v7a → v7b. Everything else is within noise at n=113.
 
 ---
 
@@ -266,6 +378,12 @@ Objective metrics unchanged: **75.7%** concept, **62.6%** structure, **18.3%** q
 | 4 — Self-judge | 2026-06-25 | `20260625_160020` | `docs/baseline/eval_*_20260625_160020.*` |
 | 5 — External judge (72B) | 2026-07-03 | `20260703_171851` | `docs/baseline/eval_*_ext_judge_20260703_171851.*` |
 | 6 — Structure prompt v2 (**full eval report**) | 2026-07-03 | `20260703_180434` | `docs/baseline/eval_*_20260703_180434.*` |
+| 7a — Ablation `v6repro` | 2026-08-24 | `v6repro_20260824_101855` | `docs/baseline/eval_*_vllm_v6repro_*.**` |
+| 7b — Ablation `v7a` (de-leaked) | 2026-08-24 | `v7a_20260824_102619` | `docs/baseline/eval_*_vllm_v7a_*.*` |
+| 7c — Ablation `v7b` (**best**) | 2026-08-24 | `v7b_20260824_103350` | `docs/baseline/eval_*_vllm_v7b_*.*` |
+| 7 — 32B generations | 2026-08-24 | `gen32b_20260824_113423` | `docs/baseline/eval_*_vllm_gen32b_*.*` |
+| 7 — External judge (32B) ×4 | 2026-08-24 | `20260824_11*` | `docs/baseline/eval_*_ext_judge_{run4_32b,run6,v7b,j32b_on_gen32b}_*.*` |
+| 7 — Self-judge (9B) ×2 | 2026-08-24 | `20260824_1[15]*` | `docs/baseline/eval_*_ext_judge_j9b_on_gen{9b,32b}_*.*` |
 
 \*Run 4 re-scores the same generations as Run 3; only judge columns are new.
 
@@ -280,7 +398,7 @@ Each gold row is scored in two independent stages (not chained):
 
 Metrics are **exact match** after normalization (`src/sig/normalize.py`): lowercase, whitespace stripped; US/UK spelling unified (`Behavior`/`Behaviour`, `judgment`/`judgement`); structure codes extracted via regex (e.g. `xIe`, `xPRy`).
 
-Question exact match compares normalized predicted vs gold question strings. **Run 4** adds self-judge (`judge.py`, 1–5 scale) using Qwen3.5-9B. **Run 5** re-scores the same predictions with Qwen2.5-72B via `scripts/run_judge_only.py` (see external judge caveat below).
+Question exact match compares normalized predicted vs gold question strings. **Run 4** adds self-judge (`judge.py`, 1–5 scale) using Qwen3.5-9B. **Run 5** re-scores the same predictions with Qwen2.5-72B via `scripts/run_judge_only.py` (see external judge caveat below). **Run 7** re-scores them again with Qwen3-32B, and adds the 2×2 generator×judge design.
 
 ---
 
@@ -615,22 +733,177 @@ Run 6 updates `fig01`–`fig07` (progression now includes Run 6; heatmaps/confus
 
 ---
 
+## Run 7 — Review response (`20260824`)
+
+All numbers n=113 on the corrected gold set.
+
+### Headline
+
+| Metric | Run 6 | v6repro | v7a | **v7b** |
+|--------|-------|---------|-----|---------|
+| Concept accuracy | 76.1% | 78.8% | 77.9% | **85.0%** |
+| Structure accuracy | 74.3% | 76.1% | 73.5% | **79.6%** |
+| Both correct | 72.6% | 74.3% | 71.7% | **79.6%** |
+
+### The ablation is surgical
+
+v7b's gain lands almost entirely on the three concepts its rule was written to fix, and
+**18 of 22 concepts are bit-identical between v7a and v7b**:
+
+| Concept | n | v6repro | v7a | v7b |
+|---------|---|---------|-----|-----|
+| **Norms** | 3 | 33.3% | 0.0% | **100%** |
+| **Policies** | 3 | 0.0% | 0.0% | **66.7%** |
+| **Causal relationship** | 3 | 33.3% | 33.3% | **100%** |
+| Evaluation | 20 | 80.0% | 80.0% | 90.0% |
+| Preference | 10 | 80.0% | 90.0% | 80.0% |
+| *18 others* | — | — | — | *unchanged* |
+
+The arithmetic closes exactly: +3 Norms, +2 Policies, +2 Causal, +2 Evaluation, −1 Preference
+= +8 items = the observed concept jump.
+
+**State the caveat openly:** those three cells are **n=3 each**, so "100%" means 3/3 and the
+effect rests on 7 items. The paired McNemar (p=0.039) is the defensible statistic, not the
+per-cell percentages.
+
+### Leakage (W1)
+
+| Arm | Prompt | Gold items quoted verbatim | In-prompt | Held-out |
+|-----|--------|---------------------------|-----------|----------|
+| `v6repro` | `assertion_developer.md` | **15** | **100%** (15/15) | 75.5% (74/98) |
+| `v7a` | `assertion_developer_v7a.md` | **0** | — | 77.9% |
+| `v7b` | `assertion_developer_v7b.md` | **0** | — | 85.0% |
+
+The leakage evidence is the **in-prompt vs held-out gap within `v6repro`** — a perfect 100% on
+the memorised items against 75.5% on the rest. It is *not* the v7a drop: removing those
+examples costs nothing statistically (p=1.0), which is a separate and useful finding — the
+prompt was not depending on them.
+
+### W3 — the self-judge is a degenerate instrument
+
+2×2, mean indicator→assertion score:
+
+| | judge 9B | judge 32B |
+|---|---|---|
+| **gen 9B** | 4.48 | 4.43 |
+| **gen 32B** | 4.49 | 4.39 |
+
+**No self-preference bias.** Each judge scores both generators almost identically; the 32B is
+if anything *harsher* on its own output (−0.04). The variance is between judges, not
+own-vs-other.
+
+The means hide the real finding — the **distributions** do not:
+
+| Judge / target | 1 | 2 | 3 | 4 | 5 | scored |
+|---|---|---|---|---|---|---|
+| 9B on gen9b | 2 | 16 | 0 | 1 | 91 | 110/113 |
+| 32B on gen9b | 0 | 2 | 15 | 28 | 68 | 113/113 |
+
+The 9B emits a 5 or a 2 and essentially nothing else — **zero 3s and one 4 across 113 items** —
+and fails to return a parseable score on 3 items entirely. It is a binary pass/fail detector
+wearing a 5-point scale. The 32B is unimodal and monotone. Report the *distribution*, not the
+mean: the two means differ by 0.05 while the instruments are not comparable at all.
+
+### The judge swap is measurable
+
+Same 113 Run 4 predictions under both judges:
+
+| Judge | 1 | 2 | 3 | 4 | 5 | mean |
+|---|---|---|---|---|---|---|
+| Qwen2.5-72B (Run 5) | 1 | 4 | 22 | 43 | 43 | 4.09 |
+| Qwen3-32B (Run 7) | 0 | 1 | 12 | 28 | 72 | 4.51 |
+
+Discrimination ordering is **72B > 32B > 9B**. The 32B is a valid instrument but more lenient
+than the 72B was. **This gap cannot be decomposed** — the 72B no longer exists, so whether it
+reflects scale, model family, or the fact that the 32B ran with thinking disabled is
+unresolvable. Disclose it as a limitation.
+
+### A bigger generator does not help
+
+| Generator | Concept | Structure | Both |
+|-----------|---------|-----------|------|
+| Qwen3.5-9B (v7b prompt) | **85.0%** | **79.6%** | **79.6%** |
+| Qwen3-32B (same prompt) | 77.0% | 68.1% | 68.1% |
+
+The 32B is **worse** at the task despite 3.5× the parameters (McNemar p=0.064, so directional
+rather than conclusive). Scale does not buy notation adherence — this is a framework-adherence
+problem, not a capability problem. Useful support for the prompt-engineering approach.
+
+### Remaining weaknesses
+
+- **Structure is fully gated on concept.** P(structure correct | concept correct) = **93.8%**
+  (90/96) vs **0.0%** (0/17) when the concept is wrong. Structure is never right when the
+  concept is wrong, so concept errors cost twice.
+- **Question exact match is flat at 20.4%** across every Run 7 arm — the prompt work does not
+  touch it.
+- **Question format is still degenerate**: 1 distinct value across all 113 items. It measures nothing.
+- **Answer-option response-type agreement: 61.1%.**
+- **The prompts now contradict the gold set.** `concepts.yaml` injects
+  `Evaluative belief → xP(e)y,xP(e)`, but the hand-written tables in every assertion prompt
+  still teach `xPyc` in four places. The prompts were **not** edited, because doing so would
+  invalidate the Run 6 and Run 7 results. This is the natural next intervention (see below).
+
+### No-LLM baselines (W6)
+
+| Baseline | Concept | Structure |
+|----------|---------|-----------|
+| Majority class | 16.8% | — |
+| Lexical 1-NN (TF-IDF, leave-one-out) | 32.7% | 31.0% |
+
+v7b's 85.0% is well clear of both.
+
+### Figures
+
+`fig01`–`fig07` now include the three Run 7 arms and are computed on the corrected 113 items.
+Judge figures (`fig08`–`fig11`) remain Run 4 self-judge; external-judge figures
+(`fig12`–`fig14`) are regenerated from the **Qwen3-32B** re-judge of Run 4, so they remain
+directly comparable to the Run 5 versions they replace.
+
+---
+
 ## Interpretation
 
-**Assertion stage:** Four prompt passes (Runs 1–3, 6) brought concept accuracy to **76.5%** and structure to **75.7%** without fine-tuning. Run 6 structure pass 2 fixed the main systematic errors (`xFD`, `xDpl`, `xFy`, `xDqu`, `xDti`, `vIi`). Remaining errors concentrate on **rare concepts** (Norms, Policies, Causal relationship; n=3 each) and **concept–structure coupling** when the concept label is wrong.
+**Assertion stage:** Five prompt passes (Runs 1–3, 6, 7) brought concept accuracy to **85.0%**
+and structure to **79.6%** without fine-tuning, on a de-leaked prompt and a corrected gold set.
+The Run 7 notation rule closed the Norms/Policies/Causal gap that survived Run 6. Remaining
+errors are dominated by **concept–structure coupling**: structure is never correct when the
+concept is wrong.
 
-**Question stage:** Coverage is solved (100%). Exact string match (~17%) is misleading. Run 5 external judge confirms **4.56/5** AQ with **100% ≥ 4**. Report external judge scores in the paper; cite exact match only as a strict automated baseline.
+**But the honest read is narrower than the trend line suggests.** Of six run-to-run
+transitions, only two are statistically significant at n=113 (Run 3 → Run 6 structure,
+p=0.024; v7a → v7b concept, p=0.039). The Run 1 → Run 2 "prompt tuning" gain is largely a
+scoring-normalizer artifact (8.0 of 11.5 pp) and does not survive a paired test. The project's
+real gains are the two structure/notation passes, not the accumulation of prompt edits.
 
-**Evaluation strategy:** Report taxonomy exact-match (assertion) and LLM-as-judge alignment (Run 5 external 72B). They measure framework adherence vs semantic fidelity.
+**Question stage:** Coverage is solved (100%). Exact string match (20.4%) is misleading and
+flat across every arm. Report judge alignment, and cite exact match only as a strict
+automated baseline. Question *format* remains degenerate (1 distinct value) and should be
+dropped as a metric or redefined.
 
-**Fine-tuning decision:** Prompt tuning reached **76.5% / 75.7%** objectively. LoRA is optional; highest-value prompt work left is **Norms** (`o(H+I)y` vs `vIi`) and **Policies/Causal** disambiguation. Re-run external judge on Run 6 predictions to update semantic scores.
+**Evaluation strategy:** Report taxonomy exact-match (assertion) alongside external-judge
+alignment (Qwen3-32B), and always report the judge's **score distribution**, not just its mean.
+Run 7 showed two judges whose means differ by 0.05 while one uses four scale points and the
+other effectively two.
+
+**Scale is not the lever.** The 32B generator is *worse* than the 9B on the same prompt
+(68.1% vs 79.6% both-correct). This is a framework-adherence task; prompt and notation work
+dominate model size. LoRA remains optional and is not the highest-value next step.
 
 ## Recommended next steps
 
-1. **Norms prompt pass:** few-shot for `o(H+I)y` vs Values `vIi` (fix Run 6 regression)
-2. **External judge on Run 6:** `run_judge_only.py` on `eval_report_vllm_20260703_180434.csv`
-3. **Human spot-check:** ~20 rows to validate 72B judge against expert ratings
-4. **LoRA SFT (optional):** rare concepts if prompt passes plateau on Norms/Policies
+1. **v7c — align the prompt tables with the corrected notation.** `concepts.yaml` now injects
+   `Evaluative belief → xP(e)y,xP(e)` while the hand-written tables still teach `xPyc` in four
+   places. The model already produces `xPyc` with perfect consistency, so this is a 3-item
+   (~2.7 pp structure) fix and the cheapest remaining win. Needs a GPU; do **not** edit the
+   existing prompts in place — add `assertion_developer_v7c.md` so Runs 6 and 7 stay reproducible.
+2. **A genuinely new test set (W1).** Nothing so far fully closes leakage: the *rules* in the
+   prompt were still written while looking at these items. ~40 freshly annotated indicators
+   would make this a real held-out set.
+3. **Inter-annotator agreement (W7).** Two annotators on ~30 items gives a κ for §5.1.
+4. **Human spot-check of the judge:** ~20 rows against expert ratings, now that the 32B is the
+   instrument of record.
+5. **Concept-error triage before more structure work** — structure accuracy is capped by
+   concept accuracy (0% when concept is wrong), so concept errors are worth double.
 
 ## How to reproduce
 
@@ -650,10 +923,13 @@ Quick test (5 rows): set `eval.max_rows: 5` in `config.yaml`.
 Publication-quality plots (PDF + PNG) are generated from baseline artifacts:
 
 ```bash
-python scripts/generate_figures.py --run-id 20260703_180434
+python scripts/generate_figures.py            # defaults to v7b + the 32B judge
 ```
 
-See `docs/figures/FIGURES.md` for file list and suggested captions. Judge figures use Run 4 (`--judge-run-id 20260625_160020`); external judge figures from Run 5.
+Figures are computed on the **corrected 113-item** gold set via `src/sig/gold_fixes.py`; the
+`eval_summary_*.json` files are not used for accuracy figures because they are stale at n=115.
+See `docs/figures/FIGURES.md` for the file list and suggested captions. Judge figures use
+Run 4 (`--judge-run-id 20260625_160020`); external-judge figures use the Qwen3-32B re-judge.
 
 Offline analysis (no GPU):
 
@@ -669,14 +945,33 @@ eval:
   run_judge: true
 ```
 
-External judge only (Run 5, no pipeline rerun):
+External judge only (no pipeline rerun):
 
 ```bash
-# Terminal 1: 2× GPU, start 72B judge server
+# Terminal 1: 2× GPU, start the Qwen3-32B judge server
 bash scripts/start_vllm_judge.sh
 
-# Terminal 2: re-score Run 4 CSV
-python scripts/run_judge_only.py docs/baseline/eval_report_vllm_20260625_160020.csv
+# Terminal 2: re-score any prediction CSV
+python scripts/run_judge_only.py docs/baseline/eval_report_vllm_20260625_160020.csv --tag run4_32b
 ```
 
-Or batch: `sbatch scripts/run_external_judge.sh`
+### Run 7 in one allocation
+
+```bash
+sbatch scripts/run7.sh                    # 2 GPUs, 5 h, all three stages
+RUN7_SKIP_STAGE1=1 bash scripts/run7.sh   # resume from the judge stage
+```
+
+Inside an existing `salloc`, `srun` onto the node **without `--overlap`** — an overlapping
+step only sees one GPU and Stage 2 needs TP=2:
+
+```bash
+srun --jobid=<JOBID> --pty bash
+```
+
+### Offline re-analysis (no GPU) — the canonical numbers
+
+```bash
+python scripts/reanalysis.py              # writes docs/reanalysis.json
+python scripts/reanalysis.py --self-check # asserts the statistics helpers
+```
