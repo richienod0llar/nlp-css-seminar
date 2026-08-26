@@ -4,3 +4,12 @@ __pycache__/
 outputs/logs/
 *.log
 .DS_Store
+# LaTeX build artifacts (the PDF itself is tracked)
+*.aux
+*.bbl
+*.blg
+*.out
+*.toc
+*.synctex.gz
+*.fls
+*.fdb_latexmk
