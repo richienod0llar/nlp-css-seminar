@@ -19,6 +19,7 @@
 \usepackage{tikz}
 % \usepackage{svg} % not used; our figures are PDFs (svg needs --shell-escape + Inkscape)
 \usepackage{float}
+\usepackage{placeins} % \FloatBarrier: keeps appendix figures inside their own appendix
 % \usepackage{multirow} % not used
 \usetikzlibrary{fit,positioning,arrows.meta,shapes.misc,calc,backgrounds}
 % NOTE: do not also load natbib here; it conflicts with the cite package and with IEEEtran.bst.
@@ -603,6 +604,7 @@ $z$ & optional comparison referent; licensed for Preference but not exercised by
 \end{tabular}
 \end{table}
 
+\FloatBarrier
 \section{Agent Prompts}
 \label{app:prompts}
 Both prompts begin with the dynamically injected taxonomy block (Section~\ref{sec:method}); only the fixed portions are reproduced here in abbreviated form.
@@ -611,6 +613,7 @@ Both prompts begin with the dynamically injected taxonomy block (Section~\ref{se
 
 \emph{Question Developer.} Role: an expert questionnaire designer that turns an assertion into a question and answer options. Rules: convert the declarative assertion into a clear, neutral question; prefer direct-interrogative phrasing; select a response format appropriate to the concept type (rating scales for subjective concepts; frequency, multiple-choice, or open-ended for objective ones); preserve meaning; return answer options as a single delimited string; and output only a JSON object with keys \emph{question}, \emph{answer\_options}, \emph{question\_format}. A representative example: assertion ``I am satisfied with this product'' maps to question ``How satisfied are you with this product?'', a rating scale, tagged as a direct interrogative.
 
+\FloatBarrier
 \section{Complete Per-Concept Results}
 \label{app:perconcept}
 Table~\ref{tab:perconcept} reports concept and structure accuracy for all $22$ concepts at the best configuration (Run~7c), as raw counts. Fig.~\ref{fig:gap} plots the same data as concept accuracy against structure accuracy, so that concepts the model labels correctly but still misstructures fall below the diagonal. Counts rather than percentages are used deliberately: fourteen of the twenty-two concepts have $n{=}3$, where a single item moves the percentage by $33$ points and a Wilson interval spans most of the unit interval.
@@ -662,6 +665,7 @@ Time & 3 & 3/3 & 3/3 \\
 \label{fig:gap}
 \end{figure}
 
+\FloatBarrier
 \section{Confusion Matrices}
 \label{app:confusion}
 Fig.~\ref{fig:concheat} and Fig.~\ref{fig:structheat} give the full concept and structure confusion matrices at the best configuration; Fig.~\ref{fig:concconf} and Fig.~\ref{fig:structconf} extract the most frequent confusing pairs discussed in Section~\ref{sec:discussion}.
@@ -694,6 +698,7 @@ Fig.~\ref{fig:concheat} and Fig.~\ref{fig:structheat} give the full concept and 
 \label{fig:structconf}
 \end{figure}
 
+\FloatBarrier
 \section{Judge Rubric and Hardest Items}
 \label{app:judge}
 The judge is prompted with a fixed rubric on a $1$--$5$ scale: $5$ perfect alignment; $4$ minor wording or format differences only; $3$ partial alignment, related but missing nuance or scope; $2$ poor alignment, significant mismatch; $1$ no alignment. It returns a score and a brief rationale under the judge JSON schema. Table~\ref{tab:worst} lists the items with the lowest external indicator-to-assertion scores, most of which coincide with concept errors and with first-person phrasings of factual indicators; the last row also illustrates the self-judge over-rating an item the external judge scored low.
@@ -716,12 +721,14 @@ Length of engagement & Time $\to$ Demographics & 2 & 5 \\
 \end{tabular}
 \end{table}
 
+\FloatBarrier
 \section{Reproduction Details}
 \label{app:repro}
 Generation and judging use an OpenAI-compatible inference server hosting the open-weight models locally on GPU. The generator (\texttt{Qwen/Qwen3.5-9B}) runs on a single high-memory GPU; the external judges (\texttt{Qwen/Qwen2.5-72B-Instruct}, and \texttt{Qwen/Qwen3-32B} after the former was removed from the shared model store) run on two GPUs with tensor parallelism. Decoding is deterministic (temperature $0$, up to $1024$ tokens per call). For reliable structured output from the reasoning-capable base model, thinking mode is disabled and an explicit instruction to emit only JSON is appended to each request; both stages use schema-guided JSON decoding, and the assertion stage additionally constrains the concept field to the enumerated taxonomy. On the target hardware the server required a non-default attention backend and eager execution to run stably; the exact backend flags, library-path ordering, and launch scripts are provided with the code release. Runs are configuration-driven, so fixing the configuration file and model version reproduces the reported outputs, and each run additionally exports a per-item prediction table together with the objective summary and confusion matrices.
 
 
 
+\FloatBarrier
 \bibliographystyle{ieeetr}
 \bibliography{references}
 

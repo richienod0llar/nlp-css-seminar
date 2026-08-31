@@ -581,7 +581,5 @@ memorised item. Applied to `data/gold_set.xlsx`; replayed onto existing reports 
 | `scripts/reanalysis.py` | Run 7 arms added; per-arm prompt for the leakage split; 2×2 judge table; judge-swap and generator comparisons; corrections applied to every run |
 | `scripts/generate_figures.py` | `EXT_JUDGE_NAME` constant; Run 7 arms in the progression; accuracy recomputed on corrected gold instead of the stale summaries |
 | `docs/BASELINE_REPORT.md` | Run 7 changelog + results sections; corrected-results table; correction banner |
-| `docs/PLAN.md`, `docs/PAPER_OUTLINE.md` | Run 7 progress entry; all headline numbers moved to n=113 |
-
 **Do not quote `docs/baseline/eval_summary_*.json`** — they are stale at n=115.
 `docs/reanalysis.json` is the single source of truth.

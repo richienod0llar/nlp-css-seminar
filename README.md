@@ -112,11 +112,10 @@ so no run had to be repeated on a GPU.
 │   ├── run_judge_only.py        # re-score an existing CSV with any judge
 │   ├── reanalysis.py            # ALL statistics — no GPU needed
 │   ├── generate_figures.py      # all 15 publication figures
-│   └── activate_env.sh, setup_cuda_libs.sh, request_gpu.sh
+│   └── activate_env.sh, setup_cuda_libs.sh
 ├── docs/
 │   ├── BASELINE_REPORT.md       # per-run write-up, Runs 1–7
 │   ├── REVIEW_RESPONSE.md       # response to the paper review
-│   ├── PAPER_OUTLINE.md, PLAN.md
 │   ├── reanalysis.json          # canonical numbers
 │   ├── baseline/                # committed per-item CSVs + summaries
 │   └── figures/                 # fig01–fig15 (PDF + PNG) + FIGURES.md
